@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
-import '../widgets/custom_button.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_components.dart';
+import 'bilangan_page.dart';
+import 'calculator_page.dart';
+import 'discount_page.dart';
+import 'max_min_page.dart';
+import 'multi_quiz_page.dart';
+import 'poll_page.dart';
 import 'profile_page.dart';
 import 'quiz_page.dart';
-import 'multi_quiz_page.dart';
-import 'calculator_page.dart';
-import 'poll_page.dart';
-import 'max_min_page.dart';
-import 'discount_page.dart';
+import 'sorting_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,461 +21,513 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  String _query = '';
+  final _searchController = TextEditingController();
+
+  late final List<_FeatureItem> _features = [
+    _FeatureItem(
+      icon: Icons.person_rounded,
+      title: 'Profile',
+      subtitle: 'Kelola profil dan video anggota',
+      accent: AppPalette.navy,
+      open: (context) => _selectTab(1),
+    ),
+    _FeatureItem(
+      icon: Icons.quiz_rounded,
+      title: 'Quiz',
+      subtitle: 'Latihan soal interaktif',
+      accent: const Color(0xFF315C99),
+      open: (context) => _selectTab(2),
+    ),
+    _FeatureItem(
+      icon: Icons.checklist_rounded,
+      title: 'Multi Quiz',
+      subtitle: 'Pilih beberapa jawaban',
+      accent: const Color(0xFFF59E0B),
+      open: (context) => _push(context, const MultiQuizPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.calculate_rounded,
+      title: 'Calculator',
+      subtitle: 'Operasi angka dan bentuk',
+      accent: const Color(0xFF10B981),
+      open: (context) => _push(context, const CalculatorPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.poll_rounded,
+      title: 'Polling',
+      subtitle: 'Voting hobi favorit',
+      accent: const Color(0xFFEC4899),
+      open: (context) => _push(context, const PollPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.maximize_rounded,
+      title: 'Max & Min',
+      subtitle: 'Cari nilai terbesar dan terkecil',
+      accent: const Color(0xFF0EA5E9),
+      open: (context) => _push(context, const MaxMinPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.discount_rounded,
+      title: 'Discount',
+      subtitle: 'Hitung diskon belanja',
+      accent: const Color(0xFFEF4444),
+      open: (context) => _push(context, const DiscountPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.numbers_rounded,
+      title: 'Bilangan',
+      subtitle: 'Kenali jenis bilangan',
+      accent: const Color(0xFF22C55E),
+      open: (context) => _push(context, const BilanganPage()),
+    ),
+    _FeatureItem(
+      icon: Icons.sort_rounded,
+      title: 'Sorting',
+      subtitle: 'Urutkan data angka',
+      accent: const Color(0xFF6366F1),
+      open: (context) => _push(context, const SortingPage()),
+    ),
+  ];
+
+  void _selectTab(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  void _push(BuildContext context, Widget page) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 220),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF082052);
-    const bgColor = Color(0xFFF8F0E5);
-    final user = User.defaultUser();
-    final screenWidth = MediaQuery.of(context).size.width;
+    final pages = [
+      _buildHomePage(context),
+      const ProfilePage(),
+      const QuizPage(),
+      _buildCategoriesPage(context),
+    ];
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          // Index 0: Home Page
-          _buildHomePage(user, primaryColor, bgColor, screenWidth),
-          // Index 1: Profile Page
-          const ProfilePage(),
-          // Index 2: Quiz Page
-          const QuizPage(),
-          // Index 3: Categories Page
-          _buildCategoriesPage(primaryColor, bgColor, screenWidth),
-        ],
+      extendBody: true,
+      body: IndexedStack(index: _selectedIndex, children: pages),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Semua fitur',
+        onPressed: () => _selectTab(3),
+        child: const Icon(Icons.add_rounded, size: 32),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: bgColor,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey[400],
+      bottomNavigationBar: BottomNav(
+        selectedIndex: _selectedIndex,
+        onSelected: _selectTab,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Quiz'),
-          BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Categories'),
+          BottomNavEntry(
+            icon: Icons.home_outlined,
+            selectedIcon: Icons.home_rounded,
+            label: 'Home',
+          ),
+          BottomNavEntry(
+            icon: Icons.person_outline_rounded,
+            selectedIcon: Icons.person_rounded,
+            label: 'Profile',
+          ),
+          BottomNavEntry(
+            icon: Icons.school_outlined,
+            selectedIcon: Icons.school_rounded,
+            label: 'Quiz',
+          ),
+          BottomNavEntry(
+            icon: Icons.apps_outlined,
+            selectedIcon: Icons.apps_rounded,
+            label: 'Fitur',
+          ),
         ],
       ),
     );
   }
 
-
-  Widget _buildHomePage(final user, Color primaryColor, Color bgColor, double screenWidth) {
-    final padding = screenWidth < 400 ? 16.0 : 20.0;
-    final heading1 = screenWidth < 400 ? 22.0 : 24.0;
-    final heading2 = screenWidth < 400 ? 14.0 : 16.0;
+  Widget _buildHomePage(BuildContext context) {
+    final user = User.defaultUser();
+    final width = MediaQuery.sizeOf(context).width;
+    final padding = width < 390 ? 16.0 : 20.0;
+    final featured = _filteredFeatures.take(6).toList();
 
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              color: primaryColor,
-              padding: EdgeInsets.fromLTRB(padding, 12, padding, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Learning Hub',
-                          style: TextStyle(
-                            fontSize: heading1,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.white),
-                        onPressed: () {},
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search features...',
-                        hintStyle: TextStyle(color: Colors.grey[500]),
-                        prefixIcon: Icon(Icons.search, color: primaryColor),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Hi, ${user.name}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      bottom: false,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _HomeHeader(
+              userName: user.name,
+              query: _query,
+              controller: _searchController,
+              onQueryChanged: (value) => setState(() => _query = value),
+              onClear: () {
+                _searchController.clear();
+                setState(() => _query = '');
+              },
             ),
-            Padding(
-              padding: EdgeInsets.all(padding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(padding, 12, padding, 118),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _StaggeredIn(
+                  delay: 20,
+                  child: _WelcomeCard(userName: user.name),
+                ),
+                const SizedBox(height: 18),
+                SectionHeader(
+                  title: _query.isEmpty ? 'Fitur populer' : 'Hasil pencarian',
+                  action: 'Lihat semua',
+                  onAction: () => _selectTab(3),
+                ),
+                const SizedBox(height: 12),
+                if (featured.isEmpty)
+                  _EmptySearch(query: _query)
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: width < 520 ? 2 : 3,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: width < 380 ? 0.86 : 0.96,
+                    ),
+                    itemCount: featured.length,
+                    itemBuilder: (context, index) {
+                      final item = featured[index];
+                      return _StaggeredIn(
+                        delay: 40 * index,
+                        child: FeatureCard(
+                          icon: item.icon,
+                          title: item.title,
+                          subtitle: item.subtitle,
+                          color: item.accent,
+                          onTap: () => item.open(context),
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StaggeredIn(
+                        delay: 50,
                         child: _StatCard(
                           icon: Icons.menu_book_rounded,
-                          iconColor: primaryColor,
                           title: 'Course',
                           value: '${user.completedCourses}',
                           subtitle: 'Completed',
-                          primaryColor: primaryColor,
-                          bgColor: bgColor,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StaggeredIn(
+                        delay: 80,
                         child: _StatCard(
                           icon: Icons.quiz_rounded,
-                          iconColor: primaryColor,
                           title: 'Quiz',
                           value: '${user.completedQuizzes}',
                           subtitle: 'Completed',
-                          primaryColor: primaryColor,
-                          bgColor: bgColor,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Card(
-                    color: Colors.white,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Learning Progress',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF374151),
-                                ),
-                              ),
-                              Text(
-                                '${user.learningProgress.toInt()}%',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: LinearProgressIndicator(
-                              value: user.learningProgress / 100,
-                              minHeight: 8,
-                              backgroundColor: const Color(0xFFE5E7EB),
-                              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _StaggeredIn(
+                  delay: 120,
+                  child: _ProgressCard(progress: user.learningProgress),
+                ),
+                const SizedBox(height: 24),
+                SectionHeader(
+                  title: 'Akses cepat',
+                  action: 'Semua fitur',
+                  onAction: () => _selectTab(3),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 98,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _features.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      return _QuickAction(item: _features[index]);
+                    },
                   ),
-                  const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '#Categories',
-                        style: TextStyle(
-                          fontSize: heading2,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _selectedIndex = 3),
-                        child: Text(
-                          'See All',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 100,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        _CategoryIcon(
-                          icon: Icons.quiz_rounded,
-                          label: 'Quiz',
-                          color: primaryColor,
-                          onTap: () => setState(() => _selectedIndex = 2),
-                        ),
-                        _CategoryIcon(
-                          icon: Icons.menu_book_rounded,
-                          label: 'Course',
-                          color: primaryColor,
-                          onTap: () {},
-                        ),
-                        _CategoryIcon(
-                          icon: Icons.checklist_rounded,
-                          label: 'Multi',
-                          color: primaryColor,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MultiQuizPage()),
-                          ),
-                        ),
-                        _CategoryIcon(
-                          icon: Icons.calculate_rounded,
-                          label: 'Calc',
-                          color: primaryColor,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CalculatorPage()),
-                          ),
-                        ),
-                        _CategoryIcon(
-                          icon: Icons.poll_rounded,
-                          label: 'Poll',
-                          color: primaryColor,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const PollPage()),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Features for you!',
-                        style: TextStyle(
-                          fontSize: heading2,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _selectedIndex = 3),
-                        child: Text(
-                          'See All',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: screenWidth < 400 ? 2 : 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.85,
-                    children: [
-                      _FeatureCard(
-                        icon: Icons.person_rounded,
-                        title: 'Profile',
-                        color: primaryColor,
-                        onTap: () => setState(() => _selectedIndex = 1),
-                        primaryColor: primaryColor,
-                      ),
-                      _FeatureCard(
-                        icon: Icons.maximize_rounded,
-                        title: 'Max & Min',
-                        color: primaryColor,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MaxMinPage()),
-                        ),
-                        primaryColor: primaryColor,
-                      ),
-                      _FeatureCard(
-                        icon: Icons.discount_rounded,
-                        title: 'Discount',
-                        color: primaryColor,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const DiscountPage()),
-                        ),
-                        primaryColor: primaryColor,
-                      ),
-                      _FeatureCard(
-                        icon: Icons.checklist_rounded,
-                        title: 'Multi Quiz',
-                        color: primaryColor,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MultiQuizPage()),
-                        ),
-                        primaryColor: primaryColor,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
+                ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCategoriesPage(Color primaryColor, Color bgColor, double screenWidth) {
-    final padding = screenWidth < 400 ? 16.0 : 20.0;
-    final heading1 = screenWidth < 400 ? 22.0 : 24.0;
+  Widget _buildCategoriesPage(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final padding = width < 390 ? 16.0 : 20.0;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(padding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      bottom: false,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(padding, 20, padding, 118),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _CategoriesHeader(total: _features.length),
+                const SizedBox(height: 16),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: width < 520 ? 2 : 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: width < 380 ? 0.86 : 0.96,
+                  ),
+                  itemCount: _features.length,
+                  itemBuilder: (context, index) {
+                    final item = _features[index];
+                    return _StaggeredIn(
+                      delay: 30 * index,
+                      child: FeatureCard(
+                        icon: item.icon,
+                        title: item.title,
+                        subtitle: item.subtitle,
+                        color: item.accent,
+                        onTap: () => item.open(context),
+                      ),
+                    );
+                  },
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_FeatureItem> get _filteredFeatures {
+    final normalized = _query.trim().toLowerCase();
+    if (normalized.isEmpty) return _features;
+
+    return _features.where((feature) {
+      return feature.title.toLowerCase().contains(normalized) ||
+          feature.subtitle.toLowerCase().contains(normalized);
+    }).toList();
+  }
+}
+
+class _FeatureItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final void Function(BuildContext context) open;
+
+  const _FeatureItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.open,
+  });
+}
+
+class _HomeHeader extends StatelessWidget {
+  final String userName;
+  final String query;
+  final TextEditingController controller;
+  final ValueChanged<String> onQueryChanged;
+  final VoidCallback onClear;
+
+  const _HomeHeader({
+    required this.userName,
+    required this.query,
+    required this.controller,
+    required this.onQueryChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Column(
+        children: [
+          Row(
             children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.grid_view_rounded),
+                tooltip: 'Menu',
+              ),
+              const Spacer(),
               Text(
-                'All Categories',
-                style: TextStyle(
-                  fontSize: heading1,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                'Home',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 24),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: screenWidth < 400 ? 2 : 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.85,
-                children: [
-                  _FeatureCard(
-                    icon: Icons.person_rounded,
-                    title: 'Profile',
-                    color: primaryColor,
-                    onTap: () => setState(() => _selectedIndex = 1),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.quiz_rounded,
-                    title: 'Quiz',
-                    color: primaryColor,
-                    onTap: () => setState(() => _selectedIndex = 2),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.checklist_rounded,
-                    title: 'Multi Quiz',
-                    color: primaryColor,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MultiQuizPage()),
+              const Spacer(),
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: ThemeController.mode,
+                builder: (context, mode, _) {
+                  return Tooltip(
+                    message: isDark ? 'Mode terang' : 'Mode gelap',
+                    child: IconButton.filledTonal(
+                      onPressed: ThemeController.toggle,
+                      icon: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        child: Icon(
+                          isDark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          key: ValueKey(mode),
+                        ),
+                      ),
                     ),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.calculate_rounded,
-                    title: 'Calculator',
-                    color: primaryColor,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CalculatorPage()),
-                    ),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.poll_rounded,
-                    title: 'Polling',
-                    color: primaryColor,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PollPage()),
-                    ),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.maximize_rounded,
-                    title: 'Max & Min',
-                    color: primaryColor,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MaxMinPage()),
-                    ),
-                    primaryColor: primaryColor,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.discount_rounded,
-                    title: 'Discount',
-                    color: primaryColor,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DiscountPage()),
-                    ),
-                    primaryColor: primaryColor,
-                  ),
-                ],
+                  );
+                },
               ),
-              const SizedBox(height: 20),
             ],
           ),
-        ),
+          const SizedBox(height: 18),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Learning Hub',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: colors.onSurface,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Hi, $userName',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          TextField(
+            controller: controller,
+            onChanged: onQueryChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Cari fitur...',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: onClear,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WelcomeCard extends StatelessWidget {
+  final String userName;
+
+  const _WelcomeCard({required this.userName});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome!',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: AppPalette.navy,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Lanjutkan belajar dan jelajahi fitur yang tersedia.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              color: AppPalette.softBlue,
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: const Icon(
+              Icons.auto_stories_rounded,
+              color: AppPalette.navy,
+              size: 42,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -480,175 +535,264 @@ class _HomePageState extends State<HomePage> {
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
-  final Color iconColor;
   final String title;
   final String value;
   final String subtitle;
-  final Color primaryColor;
-  final Color bgColor;
 
   const _StatCard({
     required this.icon,
-    required this.iconColor,
     required this.title,
     required this.value,
     required this.subtitle,
-    required this.primaryColor,
-    required this.bgColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+    final theme = Theme.of(context);
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconBubble(icon: icon, color: AppPalette.navy),
+          const SizedBox(height: 14),
+          Text(title, style: theme.textTheme.labelMedium),
+          const SizedBox(height: 4),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: 5,
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: AppPalette.navy,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              child: Icon(icon, color: primaryColor, size: 20),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(subtitle, style: theme.textTheme.labelMedium),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressCard extends StatelessWidget {
+  final double progress;
+
+  const _ProgressCard({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      padding: const EdgeInsets.all(18),
+      color: AppPalette.navy,
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Learning Progress',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              ),
+              Text(
+                '${progress.toInt()}%',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: progress / 100),
+            duration: const Duration(milliseconds: 650),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: value,
+                  minHeight: 9,
+                  color: Colors.white,
+                  backgroundColor: Colors.white.withValues(alpha: 0.22),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final _FeatureItem item;
+
+  const _QuickAction({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _Pressable(
+      onTap: () => item.open(context),
+      child: SizedBox(
+        width: 88,
+        child: Column(
+          children: [
+            IconBubble(icon: item.icon, color: item.accent, size: 56),
+            const SizedBox(height: 8),
+            Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoriesHeader extends StatelessWidget {
+  final int total;
+
+  const _CategoriesHeader({required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      color: AppPalette.navy,
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      child: Row(
+        children: [
+          IconBubble(
+            icon: Icons.apps_rounded,
+            color: Colors.white,
+            backgroundColor: Colors.white.withValues(alpha: 0.16),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Semua Fitur',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$total fitur siap digunakan',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.76),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryIcon extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _CategoryIcon({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF374151),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-  final Color primaryColor;
-
-  const _FeatureCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-    required this.primaryColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: primaryColor, size: 32),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: primaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptySearch extends StatelessWidget {
+  final String query;
+
+  const _EmptySearch({required this.query});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      child: Row(
+        children: [
+          Icon(Icons.search_off_rounded, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Tidak ada fitur untuk "$query".',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaggeredIn extends StatelessWidget {
+  final int delay;
+  final Widget child;
+
+  const _StaggeredIn({required this.delay, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 260 + delay),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 10),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _Pressable({required this.child, required this.onTap});
+
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _pressed ? 0.98 : 1,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOut,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        child: widget.child,
       ),
     );
   }

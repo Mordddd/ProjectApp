@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../widgets/option_tile.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/app_components.dart';
 
 class MultiQuizPage extends StatefulWidget {
   const MultiQuizPage({super.key});
@@ -12,14 +13,9 @@ class MultiQuizPage extends StatefulWidget {
 
 class _MultiQuizPageState extends State<MultiQuizPage> {
   final Question question = const Question(
-    questionText: 'Pilih bahasa pemrograman yang populer untuk mobile development:',
-    options: [
-      'Dart',
-      'HTML',
-      'Kotlin',
-      'CSS',
-      'Swift',
-    ],
+    questionText:
+        'Pilih bahasa pemrograman yang populer untuk mobile development:',
+    options: ['Dart', 'HTML', 'Kotlin', 'CSS', 'Swift'],
     correctAnswerIndices: [0, 2, 4],
     isMultipleAnswer: true,
   );
@@ -77,17 +73,18 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isCorrect = hasAnswered &&
-        question.checkAnswer(selectedIndices.toList());
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final isCorrect =
+        hasAnswered && question.checkAnswer(selectedIndices.toList());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.surface,
       appBar: AppBar(
         title: const Text('Multi Quiz'),
-        centerTitle: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: const Color(0xFF1F2937),
+        foregroundColor: colors.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -96,7 +93,7 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
           children: [
             // Quiz Header
             Card(
-              color: const Color(0xFFF59E0B),
+              color: AppPalette.navy,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -104,7 +101,7 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -159,7 +156,9 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withOpacity(0.1),
+                            color: const Color(
+                              0xFFF59E0B,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -178,10 +177,10 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
 
                     Text(
                       question.questionText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: colors.onSurface,
                       ),
                     ),
 
@@ -219,8 +218,12 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
             if (hasAnswered)
               Card(
                 color: isCorrect
-                    ? const Color(0xFFD1FAE5)
-                    : const Color(0xFFFEE2E2),
+                    ? (isDark
+                          ? const Color(0xFF064E3B)
+                          : const Color(0xFFD1FAE5))
+                    : (isDark
+                          ? const Color(0xFF7F1D1D)
+                          : const Color(0xFFFEE2E2)),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -255,7 +258,7 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -270,26 +273,28 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              ...question.correctAnswerIndices.map((i) => Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.check,
-                                      size: 16,
-                                      color: Color(0xFF10B981),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      question.options[i],
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF374151),
+                              ...question.correctAnswerIndices.map(
+                                (i) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Color(0xFF10B981),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        question.options[i],
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.onSurface,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              )),
+                              ),
                             ],
                           ),
                         ),

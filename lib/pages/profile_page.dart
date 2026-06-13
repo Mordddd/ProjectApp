@@ -2,8 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user.dart';
+import 'package:video_player/video_player.dart';
 import '../models/user_profile.dart';
+import '../widgets/app_components.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,7 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // Current User Data
   late UserProfile _currentUser;
   File? imageFile;
-  File? videoFile;
+  Map<String, File?> profileVideos = {};
   final picker = ImagePicker();
 
   // Browse profiles
@@ -30,6 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _initializeProfiles();
     loadData();
+    _loadProfileVideos();
   }
 
   void _initializeProfiles() {
@@ -37,7 +39,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _currentUser = _allProfiles[0]; // First profile is current user
   }
 
-  // 📥 LOAD
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -51,9 +52,50 @@ class _ProfilePageState extends State<ProfilePage> {
       String? imagePath = prefs.getString('profile_image');
       if (imagePath != null) imageFile = File(imagePath);
     });
+
+    await _loadOtherProfilesData();
   }
 
-  // 💾 SAVE
+  Future<void> _loadOtherProfilesData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      for (int i = 1; i < _allProfiles.length; i++) {
+        final profile = _allProfiles[i];
+        final name = prefs.getString('profile_${profile.id}_name');
+        final bio = prefs.getString('profile_${profile.id}_bio');
+        final hobby = prefs.getString('profile_${profile.id}_hobby');
+
+        if (name != null || bio != null || hobby != null) {
+          _allProfiles[i] = profile.copyWith(
+            name: name ?? profile.name,
+            bio: bio ?? profile.bio,
+            hobby: hobby ?? profile.hobby,
+          );
+        }
+      }
+    });
+  }
+
+  Future<void> _loadProfileVideos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final videos = <String, File?>{};
+
+    for (final profile in _allProfiles) {
+      final videoPath = prefs.getString('profile_video_${profile.id}');
+      final videoFile = videoPath != null ? File(videoPath) : null;
+      if (videoFile != null && videoFile.existsSync()) {
+        videos[profile.id] = videoFile;
+      } else {
+        videos[profile.id] = null;
+      }
+    }
+
+    setState(() {
+      profileVideos = videos;
+    });
+  }
+
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -68,11 +110,47 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Profile tersimpan!")));
+      ).showSnackBar(const SnackBar(content: Text("Profil tersimpan!")));
     }
   }
 
-  // 📸 PICK IMAGE
+  Future<void> _saveProfileData(
+    int profileIndex,
+    UserProfile updatedProfile,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileId = updatedProfile.id;
+
+    await prefs.setString('profile_${profileId}_name', updatedProfile.name);
+    await prefs.setString('profile_${profileId}_bio', updatedProfile.bio);
+    await prefs.setString('profile_${profileId}_hobby', updatedProfile.hobby);
+
+    setState(() {
+      _allProfiles[profileIndex] = updatedProfile;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Profil tersimpan!")));
+    }
+  }
+
+  Future<void> _saveProfileVideo(String profileId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final videoFile = profileVideos[profileId];
+
+    if (videoFile != null) {
+      await prefs.setString('profile_video_$profileId', videoFile.path);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Video tersimpan!")));
+    }
+  }
+
   Future<void> pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
 
@@ -83,103 +161,44 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future <void> pickVideo() async {
+  Future<void> pickVideo() async {
     final picked = await picker.pickVideo(source: ImageSource.gallery);
 
     if (picked != null) {
       setState(() {
-        videoFile = File(picked.path);
+        profileVideos[_currentUser.id] = File(picked.path);
       });
+      await _saveProfileVideo(_currentUser.id);
+    }
+  }
+
+  Future<void> pickVideoForProfile(String profileId) async {
+    final picked = await picker.pickVideo(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() {
+        profileVideos[profileId] = File(picked.path);
+      });
+      await _saveProfileVideo(profileId);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F0E5),
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF082052),
-        elevation: 0,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: colors.surface,
+      appBar: AppBar(title: const Text('Profil')),
       body: Column(
         children: [
-          // Tab Selector
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedTab = 0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _selectedTab == 0
-                              ? const Color(0xFF3B82F6)
-                              : Colors.transparent,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            bottomLeft: Radius.circular(12),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Profil Saya',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedTab == 0
-                                  ? Colors.white
-                                  : const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedTab = 1),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _selectedTab == 1
-                              ? const Color(0xFF3B82F6)
-                              : Colors.transparent,
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(12),
-                            bottomRight: Radius.circular(12),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Lihat Profil',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _selectedTab == 1
-                                  ? Colors.white
-                                  : const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: ModernTabSelector(
+              labels: const ['Profil Saya', 'Lihat Profil'],
+              icons: const [Icons.person_rounded, Icons.people_alt_rounded],
+              selectedIndex: _selectedTab,
+              onChanged: (index) => setState(() => _selectedTab = index),
             ),
           ),
           Expanded(
@@ -194,250 +213,63 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildMyProfileTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
       child: Column(
         children: [
-          // Profile Header Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Avatar
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF3B82F6),
-                          const Color(0xFF3B82F6).withOpacity(0.6),
-                        ],
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      backgroundImage: imageFile != null
-                          ? FileImage(imageFile!)
-                          : null,
-                      child: imageFile == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Color(0xFF3B82F6),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: pickImage,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text("Ganti Foto"),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _currentUser.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Active Member',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                  ),
-                ],
+          ProfileHeader(
+            name: _currentUser.name,
+            subtitle: 'Anggota Aktif',
+            avatarImage: imageFile != null ? FileImage(imageFile!) : null,
+            onAvatarTap: pickImage,
+            stats: [
+              ProfileStat(
+                label: 'Hobi',
+                value: '${_hobbyItems(_currentUser).length}',
               ),
-            ),
+              ProfileStat(
+                label: 'Video',
+                value: profileVideos[_currentUser.id] != null ? 'Ada' : '0',
+              ),
+              ProfileStat(label: 'Bergabung', value: _currentUser.joinDate),
+            ],
           ),
           const SizedBox(height: 20),
-
-          // Bio Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Tentang Saya',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _currentUser.bio,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF374151),
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          TextButton.icon(
+            onPressed: pickImage,
+            icon: const Icon(Icons.camera_alt_rounded),
+            label: const Text("Ganti Foto"),
+          ),
+          const SizedBox(height: 12),
+          _InfoCard(
+            icon: Icons.info_outline_rounded,
+            title: 'Tentang Saya',
+            child: _SoftPanel(child: Text(_currentUser.bio)),
+          ),
+          const SizedBox(height: 16),
+          _InfoCard(
+            icon: Icons.video_library_rounded,
+            title: 'Video Perkenalan',
+            child: _VideoSelector(
+              file: profileVideos[_currentUser.id],
+              onPick: pickVideo,
             ),
           ),
-          const SizedBox(height: 20),
-
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Video Perkenalan',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        videoFile != null
-                            ? Text('Video terpilih: ${videoFile!.path.split('/').last}')
-                            : const Text('Belum ada video yang dipilih.'),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: pickVideo,
-                          icon: const Icon(Icons.video_library),
-                          label: const Text("Pilih Video"),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          const SizedBox(height: 16),
+          _InfoCard(
+            icon: Icons.favorite_rounded,
+            title: 'Hobi',
+            child: _HobbyWrap(hobbies: _hobbyItems(_currentUser)),
           ),
+          const SizedBox(height: 16),
+          _JoinDateCard(joinDate: _currentUser.joinDate),
           const SizedBox(height: 20),
-
-          // Hobby Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Hobi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: _currentUser.hobby.split(',').map((hobby) {
-                      return Chip(
-                        label: Text(hobby.trim()),
-                        backgroundColor: const Color(
-                          0xFFF3B0F6,
-                        ).withOpacity(0.2),
-                        labelStyle: const TextStyle(color: Color(0xFF8B5CF6)),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Join Date
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF08A),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_today,
-                      color: Color(0xFFF59E0B),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bergabung',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                      Text(
-                        _currentUser.joinDate,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Edit Button
           ElevatedButton.icon(
-            onPressed: _showEditDialog,
-            icon: const Icon(Icons.edit),
-            label: const Text('Edit Profile'),
+            onPressed: () => _showEditDialog(_currentUser, 0),
+            icon: const Icon(Icons.edit_rounded),
+            label: const Text('Edit Profil'),
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
+              minimumSize: const Size(double.infinity, 52),
             ),
           ),
         ],
@@ -448,29 +280,30 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildBrowseProfilesTab() {
     if (_currentProfileIndex >= _allProfiles.length) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.person_outline,
-              size: 64,
-              color: Color(0xFFD1D5DB),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: CustomCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.person_outline_rounded,
+                  size: 64,
+                  color: AppPalette.navy,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Tidak ada profil lagi',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => setState(() => _currentProfileIndex = 1),
+                  child: const Text('Kembali ke Awal'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tidak ada profil lagi',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF6B7280),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => setState(() => _currentProfileIndex = 1),
-              child: const Text('Kembali ke Awal'),
-            ),
-          ],
+          ),
         ),
       );
     }
@@ -478,225 +311,46 @@ class _ProfilePageState extends State<ProfilePage> {
     final profile = _allProfiles[_currentProfileIndex];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
       child: Column(
         children: [
-          // Profile Header
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: const Color(0xFF3B82F6).withOpacity(0.1),
-                    child: const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Color(0xFF3B82F6),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    profile.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDBEAFE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      '👤 Member',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1E40AF),
-                      ),
-                    ),
-                  ),
-                ],
+          ProfileHeader(
+            name: profile.name,
+            subtitle: 'Member',
+            stats: [
+              ProfileStat(label: 'Profil', value: '$_currentProfileIndex'),
+              ProfileStat(
+                label: 'Video',
+                value: profileVideos[profile.id] != null ? 'Ada' : '0',
               ),
-            ),
+              ProfileStat(label: 'Bergabung', value: profile.joinDate),
+            ],
           ),
           const SizedBox(height: 20),
-
-          // Bio
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Tentang',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      profile.bio,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF374151),
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          _InfoCard(
+            icon: Icons.info_outline_rounded,
+            title: 'Tentang',
+            child: _SoftPanel(child: Text(profile.bio)),
+          ),
+          const SizedBox(height: 16),
+          _InfoCard(
+            icon: Icons.video_library_rounded,
+            title: 'Video Perkenalan',
+            child: _VideoSelector(
+              file: profileVideos[profile.id],
+              onPick: () => pickVideoForProfile(profile.id),
             ),
           ),
-          const SizedBox(height: 20),
-
-            Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Video Perkenalan',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        videoFile != null
-                            ? Text('Video terpilih: ${videoFile!.path.split('/').last}')
-                            : const Text('Belum ada video yang dipilih.'),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: pickVideo,
-                          icon: const Icon(Icons.video_library),
-                          label: const Text("Pilih Video"),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          const SizedBox(height: 16),
+          _InfoCard(
+            icon: Icons.favorite_rounded,
+            title: 'Hobi',
+            child: _HobbyWrap(hobbies: _hobbyItems(profile)),
           ),
-          const SizedBox(height: 20),
-
-          // Hobi
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Color(0xFFEF4444),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Hobi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: profile.hobby.split(',').map((hobby) {
-                      return Chip(
-                        label: Text(hobby.trim()),
-                        backgroundColor: const Color(
-                          0xFFF3B0F6,
-                        ).withOpacity(0.2),
-                        labelStyle: const TextStyle(color: Color(0xFF8B5CF6)),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Join Date
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF08A),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_today,
-                      color: Color(0xFFF59E0B),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bergabung',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                      Text(
-                        profile.joinDate,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Navigation Buttons
+          const SizedBox(height: 16),
+          _JoinDateCard(joinDate: profile.joinDate),
+          const SizedBox(height: 22),
           Row(
             children: [
               Expanded(
@@ -706,11 +360,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       setState(() => _currentProfileIndex--);
                     }
                   },
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.arrow_back_rounded),
                   label: const Text('Sebelumnya'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -721,33 +372,45 @@ class _ProfilePageState extends State<ProfilePage> {
                       setState(() => _currentProfileIndex++);
                     }
                   },
-                  icon: const Icon(Icons.arrow_forward),
+                  icon: const Icon(Icons.arrow_forward_rounded),
                   label: const Text('Berikutnya'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'Profil ${_currentProfileIndex} dari ${_allProfiles.length - 1}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            'Profil $_currentProfileIndex dari ${_allProfiles.length - 1}',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 18),
+          ElevatedButton.icon(
+            onPressed: () => _showEditDialog(profile, _currentProfileIndex),
+            icon: const Icon(Icons.edit_rounded),
+            label: const Text('Edit Profil'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 52),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showEditDialog() {
-    TextEditingController nameC = TextEditingController(
-      text: _currentUser.name,
-    );
-    TextEditingController bioC = TextEditingController(text: _currentUser.bio);
-    TextEditingController hobbyC = TextEditingController(
-      text: _currentUser.hobby,
-    );
+  List<String> _hobbyItems(UserProfile profile) {
+    return profile.hobby
+        .split(',')
+        .map((hobby) => hobby.trim())
+        .where((hobby) => hobby.isNotEmpty)
+        .toList();
+  }
+
+  void _showEditDialog(UserProfile profile, int profileIndex) {
+    TextEditingController nameC = TextEditingController(text: profile.name);
+    TextEditingController bioC = TextEditingController(text: profile.bio);
+    TextEditingController hobbyC = TextEditingController(text: profile.hobby);
 
     showDialog(
       context: context,
@@ -759,17 +422,13 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               TextField(
                 controller: nameC,
-                decoration: const InputDecoration(
-                  labelText: 'Nama',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Nama'),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: bioC,
                 decoration: const InputDecoration(
                   labelText: 'Tentang Saya',
-                  border: OutlineInputBorder(),
                   hintText: 'Ceritakan tentang diri Anda...',
                 ),
                 maxLines: 3,
@@ -779,7 +438,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: hobbyC,
                 decoration: const InputDecoration(
                   labelText: 'Hobi',
-                  border: OutlineInputBorder(),
                   hintText: 'Pisahkan dengan koma: Coding, Traveling, Gaming',
                 ),
                 maxLines: 2,
@@ -794,17 +452,386 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _currentUser = _currentUser.copyWith(
-                  name: nameC.text,
-                  bio: bioC.text,
-                  hobby: hobbyC.text,
-                );
-              });
-              saveData();
+              final updatedProfile = profile.copyWith(
+                name: nameC.text,
+                bio: bioC.text,
+                hobby: hobbyC.text,
+              );
+
+              if (profileIndex == 0) {
+                setState(() {
+                  _currentUser = updatedProfile;
+                });
+                saveData();
+              } else {
+                _saveProfileData(profileIndex, updatedProfile);
+              }
               Navigator.pop(context);
             },
             child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconBubble(icon: icon, color: AppPalette.navy, size: 42),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _SoftPanel extends StatelessWidget {
+  final Widget child;
+
+  const _SoftPanel({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF111827)
+            : AppPalette.softBlue,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: DefaultTextStyle.merge(
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.55),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _VideoSelector extends StatefulWidget {
+  final File? file;
+  final VoidCallback onPick;
+
+  const _VideoSelector({required this.file, required this.onPick});
+
+  @override
+  State<_VideoSelector> createState() => _VideoSelectorState();
+}
+
+class _VideoSelectorState extends State<_VideoSelector> {
+  VideoPlayerController? _controller;
+  Future<void>? _initializeFuture;
+  bool _isPlaying = false;
+  bool _fileMissing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VideoSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.file?.path != widget.file?.path) {
+      _setupController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeController();
+    super.dispose();
+  }
+
+  void _setupController() {
+    _disposeController();
+
+    final file = widget.file;
+    _fileMissing = false;
+    _isPlaying = false;
+
+    if (file == null) {
+      return;
+    }
+
+    if (!file.existsSync()) {
+      _fileMissing = true;
+      return;
+    }
+
+    final controller = VideoPlayerController.file(file);
+    _controller = controller;
+    controller.addListener(_syncPlayingState);
+    _initializeFuture = controller.initialize().then((_) async {
+      await controller.setLooping(false);
+      if (mounted && _controller == controller) {
+        setState(() {});
+      }
+    });
+  }
+
+  void _disposeController() {
+    final controller = _controller;
+    if (controller != null) {
+      controller.removeListener(_syncPlayingState);
+      controller.dispose();
+    }
+    _controller = null;
+    _initializeFuture = null;
+  }
+
+  void _syncPlayingState() {
+    final controller = _controller;
+    if (controller == null || !mounted) return;
+
+    final isPlaying = controller.value.isPlaying;
+    if (isPlaying != _isPlaying) {
+      setState(() => _isPlaying = isPlaying);
+    }
+  }
+
+  void _togglePlayback() {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (controller.value.isPlaying) {
+      controller.pause();
+    } else {
+      controller.play();
+    }
+    setState(() => _isPlaying = controller.value.isPlaying);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = widget.file?.path.split(RegExp(r'[\\/]')).last;
+    return _SoftPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.file == null)
+            const _VideoMessage(
+              icon: Icons.movie_creation_rounded,
+              text: 'Belum ada video yang dipilih.',
+            )
+          else if (_fileMissing)
+            const _VideoMessage(
+              icon: Icons.error_outline_rounded,
+              text: 'Video tidak ditemukan. Pilih ulang video.',
+            )
+          else
+            _buildVideoPreview(context, fileName),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: widget.onPick,
+              icon: const Icon(Icons.video_library_rounded),
+              label: Text(widget.file == null ? 'Pilih Video' : 'Ganti Video'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoPreview(BuildContext context, String? fileName) {
+    final controller = _controller;
+    final initializeFuture = _initializeFuture;
+
+    if (controller == null || initializeFuture == null) {
+      return const _VideoMessage(
+        icon: Icons.error_outline_rounded,
+        text: 'Video belum siap diputar.',
+      );
+    }
+
+    return FutureBuilder<void>(
+      future: initializeFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const _VideoMessage(
+            icon: Icons.error_outline_rounded,
+            text: 'Video tidak bisa diputar. Pilih video lain.',
+          );
+        }
+
+        if (snapshot.connectionState != ConnectionState.done ||
+            !controller.value.isInitialized) {
+          return const AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final aspectRatio = controller.value.aspectRatio > 0
+            ? controller.value.aspectRatio
+            : 16 / 9;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: VideoPlayer(controller),
+                  ),
+                  Material(
+                    color: Colors.black45,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      onPressed: _togglePlayback,
+                      color: Colors.white,
+                      iconSize: 34,
+                      icon: Icon(
+                        _isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                      ),
+                      tooltip: _isPlaying ? 'Jeda video' : 'Putar video',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (fileName != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _VideoMessage extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _VideoMessage({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppPalette.navy),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
+      ],
+    );
+  }
+}
+
+class _HobbyWrap extends StatelessWidget {
+  final List<String> hobbies;
+
+  const _HobbyWrap({required this.hobbies});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: hobbies.map((hobby) {
+          return Chip(
+            avatar: const Icon(Icons.favorite_rounded, size: 16),
+            label: Text(hobby),
+            backgroundColor: AppPalette.softBlue,
+            labelStyle: const TextStyle(
+              color: AppPalette.navy,
+              fontWeight: FontWeight.w700,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _JoinDateCard extends StatelessWidget {
+  final String joinDate;
+
+  const _JoinDateCard({required this.joinDate});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          const IconBubble(
+            icon: Icons.calendar_today_rounded,
+            color: AppPalette.navy,
+            size: 48,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bergabung',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  joinDate,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

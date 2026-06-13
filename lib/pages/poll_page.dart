@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/app_components.dart';
 
 class PollPage extends StatefulWidget {
   const PollPage({super.key});
@@ -10,11 +11,27 @@ class PollPage extends StatefulWidget {
 
 class _PollPageState extends State<PollPage> {
   final List<Map<String, dynamic>> _hobbies = [
-    {'name': 'Badminton', 'icon': Icons.sports_tennis, 'color': const Color(0xFF10B981)},
+    {
+      'name': 'Badminton',
+      'icon': Icons.sports_tennis,
+      'color': const Color(0xFF10B981),
+    },
     {'name': 'Catur', 'icon': Icons.grid_3x3, 'color': const Color(0xFF6366F1)},
-    {'name': 'Padel', 'icon': Icons.sports_tennis, 'color': const Color(0xFFF59E0B)},
-    {'name': 'Basket', 'icon': Icons.sports_basketball, 'color': const Color(0xFFEF4444)},
-    {'name': 'Lari Marathon', 'icon': Icons.directions_run, 'color': const Color(0xFF3B82F6)},
+    {
+      'name': 'Padel',
+      'icon': Icons.sports_tennis,
+      'color': const Color(0xFFF59E0B),
+    },
+    {
+      'name': 'Basket',
+      'icon': Icons.sports_basketball,
+      'color': const Color(0xFFEF4444),
+    },
+    {
+      'name': 'Lari Marathon',
+      'icon': Icons.directions_run,
+      'color': AppPalette.navy,
+    },
   ];
 
   String? _selectedHobby;
@@ -43,14 +60,16 @@ class _PollPageState extends State<PollPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.surface,
       appBar: AppBar(
         title: const Text('Polling Hobi'),
-        centerTitle: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: const Color(0xFF1F2937),
+        foregroundColor: colors.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -58,7 +77,7 @@ class _PollPageState extends State<PollPage> {
           children: [
             // Header Card
             Card(
-              color: const Color(0xFFEC4899),
+              color: AppPalette.navy,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -66,7 +85,7 @@ class _PollPageState extends State<PollPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -113,12 +132,12 @@ class _PollPageState extends State<PollPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Apa hobi favoritmu?',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: colors.onSurface,
                       ),
                     ),
 
@@ -126,10 +145,7 @@ class _PollPageState extends State<PollPage> {
 
                     Text(
                       'Pilih satu dari pilihan berikut:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
 
                     const SizedBox(height: 20),
@@ -143,8 +159,8 @@ class _PollPageState extends State<PollPage> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Material(
                           color: isSelected
-                              ? (hobby['color'] as Color).withOpacity(0.1)
-                              : Colors.white,
+                              ? (hobby['color'] as Color).withValues(alpha: 0.1)
+                              : (theme.cardTheme.color ?? colors.surface),
                           borderRadius: BorderRadius.circular(12),
                           child: InkWell(
                             onTap: () => _selectHobby(hobby['name']),
@@ -155,26 +171,43 @@ class _PollPageState extends State<PollPage> {
                                 border: Border.all(
                                   color: isSelected
                                       ? hobby['color']
-                                      : const Color(0xFFE5E7EB),
+                                      : colors.outlineVariant,
                                   width: 2,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
                                 children: [
-                                  Radio<String>(
-                                    value: hobby['name'],
-                                    groupValue: _selectedHobby,
-                                    onChanged: _hasVoted
-                                        ? null
-                                        : (value) => _selectHobby(value!),
-                                    activeColor: hobby['color'],
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isSelected
+                                          ? hobby['color']
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? hobby['color']
+                                            : colors.outline,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 16,
+                                          )
+                                        : null,
                                   ),
+                                  const SizedBox(width: 12),
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: (hobby['color'] as Color)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -192,7 +225,7 @@ class _PollPageState extends State<PollPage> {
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
                                             ? hobby['color']
-                                            : const Color(0xFF374151),
+                                            : colors.onSurface,
                                       ),
                                     ),
                                   ),
@@ -220,7 +253,7 @@ class _PollPageState extends State<PollPage> {
                         onPressed: _selectedHobby != null ? _submitVote : () {},
                         width: double.infinity,
                         backgroundColor: _selectedHobby != null
-                            ? const Color(0xFFEC4899)
+                            ? AppPalette.navy
                             : Colors.grey,
                       ),
                   ],
@@ -233,7 +266,9 @@ class _PollPageState extends State<PollPage> {
             // Result Card
             if (_hasVoted)
               Card(
-                color: const Color(0xFFD1FAE5),
+                color: isDark
+                    ? const Color(0xFF064E3B)
+                    : const Color(0xFFD1FAE5),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -245,7 +280,9 @@ class _PollPageState extends State<PollPage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF10B981).withOpacity(0.3),
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
@@ -283,11 +320,11 @@ class _PollPageState extends State<PollPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               'Pilihan kamu: ',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF374151),
+                                color: colors.onSurface,
                               ),
                             ),
                             Text(

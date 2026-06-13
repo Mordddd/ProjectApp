@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../widgets/option_tile.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/app_components.dart';
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key});
@@ -155,7 +156,7 @@ class _QuizPageState extends State<QuizPage> {
                     style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF6366F1),
+                      color: AppPalette.navy,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -214,19 +215,20 @@ class _QuizPageState extends State<QuizPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final question = quizzes[currentQuestionIndex];
     final isAnswered = hasAnswered;
     final isCorrect =
         isAnswered && question.checkAnswer(selectedIndices.toList());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.surface,
       appBar: AppBar(
         title: const Text('Quiz'),
-        centerTitle: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: const Color(0xFF1F2937),
+        foregroundColor: colors.onSurface,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -236,8 +238,8 @@ class _QuizPageState extends State<QuizPage> {
             // Quiz Header
             Card(
               color: question.isMultipleAnswer
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFF6366F1),
+                  ? AppPalette.deepNavy
+                  : AppPalette.navy,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -245,7 +247,7 @@ class _QuizPageState extends State<QuizPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -295,18 +297,18 @@ class _QuizPageState extends State<QuizPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                color: theme.cardTheme.color ?? colors.surface,
+                borderRadius: BorderRadius.circular(18),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Soal ${currentQuestionIndex + 1}/$totalCount',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF374151),
+                      color: colors.onSurface,
                     ),
                   ),
                   Expanded(
@@ -325,7 +327,7 @@ class _QuizPageState extends State<QuizPage> {
                           valueColor: AlwaysStoppedAnimation<Color>(
                             question.isMultipleAnswer
                                 ? const Color(0xFFF59E0B)
-                                : const Color(0xFF6366F1),
+                                : AppPalette.navy,
                           ),
                         ),
                       ),
@@ -333,10 +335,10 @@ class _QuizPageState extends State<QuizPage> {
                   ),
                   Text(
                     '${((currentQuestionIndex + 1) / totalCount * 100).toStringAsFixed(0)}%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF6B7280),
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -360,7 +362,7 @@ class _QuizPageState extends State<QuizPage> {
                       decoration: BoxDecoration(
                         color: question.isMultipleAnswer
                             ? const Color(0xFFFEF08A)
-                            : const Color(0xFF6366F1).withOpacity(0.1),
+                            : AppPalette.navy.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -372,7 +374,7 @@ class _QuizPageState extends State<QuizPage> {
                           fontWeight: FontWeight.w600,
                           color: question.isMultipleAnswer
                               ? const Color(0xFFB45309)
-                              : const Color(0xFF6366F1),
+                              : AppPalette.navy,
                         ),
                       ),
                     ),
@@ -381,10 +383,10 @@ class _QuizPageState extends State<QuizPage> {
 
                     Text(
                       question.questionText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
+                        color: colors.onSurface,
                       ),
                     ),
 
@@ -411,8 +413,12 @@ class _QuizPageState extends State<QuizPage> {
             if (isAnswered && !question.isMultipleAnswer)
               Card(
                 color: isCorrect
-                    ? const Color(0xFFD1FAE5)
-                    : const Color(0xFFFEE2E2),
+                    ? (isDark
+                          ? const Color(0xFF064E3B)
+                          : const Color(0xFFD1FAE5))
+                    : (isDark
+                          ? const Color(0xFF7F1D1D)
+                          : const Color(0xFFFEE2E2)),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -463,8 +469,12 @@ class _QuizPageState extends State<QuizPage> {
             if (isAnswered && question.isMultipleAnswer)
               Card(
                 color: isCorrect
-                    ? const Color(0xFFD1FAE5)
-                    : const Color(0xFFFEE2E2),
+                    ? (isDark
+                          ? const Color(0xFF064E3B)
+                          : const Color(0xFFD1FAE5))
+                    : (isDark
+                          ? const Color(0xFF7F1D1D)
+                          : const Color(0xFFFEE2E2)),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(

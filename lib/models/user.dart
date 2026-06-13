@@ -16,7 +16,8 @@ class User {
   static User defaultUser() {
     return const User(
       name: 'Admin',
-      avatarUrl: '[api.dicebear.com](https://api.dicebear.com/7.x/avataaars/png?seed=learning)',
+      avatarUrl:
+          '[api.dicebear.com](https://api.dicebear.com/7.x/avataaars/png?seed=learning)',
       learningProgress: 65.0,
       completedCourses: 12,
       completedQuizzes: 8,

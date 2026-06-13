@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import '../widgets/app_components.dart';
 
 class DiscountPage extends StatefulWidget {
   const DiscountPage({super.key});
@@ -14,8 +15,7 @@ class _DiscountPageState extends State<DiscountPage> {
 
   String result = '';
 
-  final primaryColor = const Color(0xFF082052);
-  final bgColor = const Color(0xFFF8F0E5);
+  final primaryColor = AppPalette.navy;
 
   final formatRupiah = NumberFormat.currency(
     locale: 'id_ID',
@@ -41,7 +41,8 @@ class _DiscountPageState extends State<DiscountPage> {
     final finalPrice = price - discountAmount;
 
     setState(() {
-      result = '''
+      result =
+          '''
 Harga Awal: ${formatRupiah.format(price)}
 Diskon: $discount%
 Potongan: ${formatRupiah.format(discountAmount)}
@@ -60,72 +61,77 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text('Kalkulator Diskon'),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: colors.surface,
+      appBar: AppBar(title: const Text('Kalkulator Diskon')),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // 🔹 Card Input
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Harga',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        String newValue =
-                            value.replaceAll(RegExp(r'[^0-9]'), '');
-
-                        if (newValue.isEmpty) {
-                          priceController.text = '';
-                          return;
-                        }
-
-                        final number = int.parse(newValue);
-                        final formatted = formatRupiah.format(number);
-
-                        priceController.value = TextEditingValue(
-                          text: formatted,
-                          selection: TextSelection.collapsed(
-                            offset: formatted.length,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: discountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Diskon (%)',
-                        border: OutlineInputBorder(),
+            CustomCard(
+              color: AppPalette.navy,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              child: Row(
+                children: [
+                  IconBubble(
+                    icon: Icons.discount_rounded,
+                    color: Colors.white,
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Kalkulator Diskon',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 18),
+            CustomCard(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Harga'),
+                    onChanged: (value) {
+                      String newValue = value.replaceAll(RegExp(r'[^0-9]'), '');
 
+                      if (newValue.isEmpty) {
+                        priceController.text = '';
+                        return;
+                      }
+
+                      final number = int.parse(newValue);
+                      final formatted = formatRupiah.format(number);
+
+                      priceController.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: discountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Diskon (%)'),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
-
-            // 🔹 Button
             Row(
               children: [
                 Expanded(
@@ -147,39 +153,25 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-
-            // 🔹 Result Card
             if (result.isNotEmpty)
-              Card(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Hasil Perhitungan',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+              CustomCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hasil Perhitungan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const Divider(),
-                      Text(
-                        result,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Divider(),
+                    Text(
+                      result,
+                      style: TextStyle(fontSize: 16, color: primaryColor),
+                    ),
+                  ],
                 ),
               ),
           ],

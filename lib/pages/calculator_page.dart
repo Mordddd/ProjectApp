@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/app_components.dart';
 import 'dart:math';
 
 class CalculatorPage extends StatefulWidget {
@@ -31,7 +32,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   final List<Map<String, dynamic>> _operations = [
     {'symbol': '+', 'name': 'Tambah', 'color': const Color(0xFF10B981)},
     {'symbol': '-', 'name': 'Kurang', 'color': const Color(0xFFF59E0B)},
-    {'symbol': '×', 'name': 'Kali', 'color': const Color(0xFF3B82F6)},
+    {'symbol': '×', 'name': 'Kali', 'color': AppPalette.navy},
     {'symbol': '÷', 'name': 'Bagi', 'color': const Color(0xFFEF4444)},
   ];
 
@@ -51,11 +52,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       'icon': Icons.square_outlined,
       'color': const Color(0xFF10B981),
     },
-    {
-      'name': 'Tabung',
-      'icon': Icons.layers_outlined,
-      'color': const Color(0xFF3B82F6),
-    },
+    {'name': 'Tabung', 'icon': Icons.layers_outlined, 'color': AppPalette.navy},
   ];
 
   void _calculateGeometry() {
@@ -160,21 +157,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  String _getGeometryLabel(int index) {
-    switch (index) {
-      case 0: // Segitiga
-        return _shapeInput2.text.isEmpty ? 'Alas' : 'Tinggi';
-      case 1: // Lingkaran
-        return 'Jari-jari';
-      case 2: // Persegi
-        return _shapeInput1.text.isEmpty ? 'Panjang' : 'Lebar';
-      case 3: // Tabung
-        return _shapeInput1.text.isEmpty ? 'Jari-jari' : 'Tinggi';
-      default:
-        return '';
-    }
-  }
-
   String _getResultLabel(int index) {
     switch (index) {
       case 0:
@@ -261,14 +243,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.surface,
       appBar: AppBar(
         title: const Text('Kalkulator'),
-        centerTitle: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: const Color(0xFF1F2937),
+        foregroundColor: colors.onSurface,
       ),
       body: Column(
         children: [
@@ -281,7 +263,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -295,7 +277,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: _selectedTab == 0
-                              ? const Color(0xFF3B82F6)
+                              ? AppPalette.navy
                               : Colors.transparent,
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(12),
@@ -309,7 +291,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                               fontWeight: FontWeight.bold,
                               color: _selectedTab == 0
                                   ? Colors.white
-                                  : const Color(0xFF6B7280),
+                                  : AppPalette.muted,
                             ),
                           ),
                         ),
@@ -323,7 +305,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: _selectedTab == 1
-                              ? const Color(0xFF3B82F6)
+                              ? AppPalette.navy
                               : Colors.transparent,
                           borderRadius: const BorderRadius.only(
                             topRight: Radius.circular(12),
@@ -337,7 +319,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                               fontWeight: FontWeight.bold,
                               color: _selectedTab == 1
                                   ? Colors.white
-                                  : const Color(0xFF6B7280),
+                                  : AppPalette.muted,
                             ),
                           ),
                         ),
@@ -366,7 +348,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         children: [
           // Header Card
           Card(
-            color: const Color(0xFF3B82F6),
+            color: AppPalette.navy,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -374,7 +356,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -423,7 +405,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: AppPalette.ink,
                     ),
                   ),
 
@@ -442,7 +424,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           decoration: InputDecoration(
                             labelText: 'Angka 1',
                             filled: true,
-                            fillColor: const Color(0xFFF3F4F6),
+                            fillColor: AppPalette.softBlue,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -450,7 +432,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: Color(0xFF3B82F6),
+                                color: AppPalette.navy,
                                 width: 2,
                               ),
                             ),
@@ -473,7 +455,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           decoration: InputDecoration(
                             labelText: 'Angka 2',
                             filled: true,
-                            fillColor: const Color(0xFFF3F4F6),
+                            fillColor: AppPalette.softBlue,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -481,7 +463,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: Color(0xFF3B82F6),
+                                color: AppPalette.navy,
                                 width: 2,
                               ),
                             ),
@@ -504,7 +486,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: AppPalette.ink,
                     ),
                   ),
 
@@ -521,7 +503,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       return Material(
                         color: isSelected
                             ? op['color']
-                            : (op['color'] as Color).withOpacity(0.1),
+                            : (op['color'] as Color).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           onTap: () => _calculate(op['symbol']),
@@ -693,7 +675,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -742,7 +724,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: AppPalette.ink,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -757,8 +739,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       return Material(
                         color: isSelected
                             ? _shapes[index]['color']
-                            : (_shapes[index]['color'] as Color).withOpacity(
-                                0.1,
+                            : (_shapes[index]['color'] as Color).withValues(
+                                alpha: 0.1,
                               ),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
@@ -820,7 +802,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF374151),
+                      color: AppPalette.ink,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -839,7 +821,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             ? 'Panjang'
                             : 'Jari-jari',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppPalette.softBlue,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -874,7 +856,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             ? 'Lebar'
                             : 'Tinggi',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppPalette.softBlue,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -898,7 +880,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       decoration: InputDecoration(
                         labelText: 'Jari-jari',
                         filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
+                        fillColor: AppPalette.softBlue,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
