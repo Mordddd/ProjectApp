@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import '../models/app_user.dart';
+import '../models/permission.dart';
+import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_components.dart';
+import '../widgets/permission_guard.dart';
 import 'bilangan_page.dart';
 import 'calculator_page.dart';
+import 'create_account_page.dart';
 import 'discount_page.dart';
 import 'max_min_page.dart';
 import 'multi_quiz_page.dart';
+import 'unauthorized_page.dart';
 import 'poll_page.dart';
 import 'profile_page.dart';
 import 'quiz_page.dart';
 import 'sorting_page.dart';
+import 'zodiac_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final AppUser user;
+  final Future<void> Function() onLogout;
+
+  const HomePage({super.key, required this.user, required this.onLogout});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -26,6 +35,7 @@ class _HomePageState extends State<HomePage> {
 
   late final List<_FeatureItem> _features = [
     _FeatureItem(
+      feature: PermissionFeature.profile,
       icon: Icons.person_rounded,
       title: 'Profile',
       subtitle: 'Kelola profil dan video anggota',
@@ -33,6 +43,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _selectTab(1),
     ),
     _FeatureItem(
+      feature: PermissionFeature.quiz,
       icon: Icons.quiz_rounded,
       title: 'Quiz',
       subtitle: 'Latihan soal interaktif',
@@ -40,6 +51,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _selectTab(2),
     ),
     _FeatureItem(
+      feature: PermissionFeature.multiQuiz,
       icon: Icons.checklist_rounded,
       title: 'Multi Quiz',
       subtitle: 'Pilih beberapa jawaban',
@@ -47,6 +59,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const MultiQuizPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.calculator,
       icon: Icons.calculate_rounded,
       title: 'Calculator',
       subtitle: 'Operasi angka dan bentuk',
@@ -54,6 +67,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const CalculatorPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.polling,
       icon: Icons.poll_rounded,
       title: 'Polling',
       subtitle: 'Voting hobi favorit',
@@ -61,6 +75,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const PollPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.maxMin,
       icon: Icons.maximize_rounded,
       title: 'Max & Min',
       subtitle: 'Cari nilai terbesar dan terkecil',
@@ -68,6 +83,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const MaxMinPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.discount,
       icon: Icons.discount_rounded,
       title: 'Discount',
       subtitle: 'Hitung diskon belanja',
@@ -75,6 +91,7 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const DiscountPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.bilangan,
       icon: Icons.numbers_rounded,
       title: 'Bilangan',
       subtitle: 'Kenali jenis bilangan',
@@ -82,16 +99,60 @@ class _HomePageState extends State<HomePage> {
       open: (context) => _push(context, const BilanganPage()),
     ),
     _FeatureItem(
+      feature: PermissionFeature.sorting,
       icon: Icons.sort_rounded,
       title: 'Sorting',
       subtitle: 'Urutkan data angka',
       accent: const Color(0xFF6366F1),
       open: (context) => _push(context, const SortingPage()),
     ),
+    _FeatureItem(
+      feature: PermissionFeature.zodiac,
+      icon: Icons.auto_awesome_rounded,
+      title: 'Zodiac',
+      subtitle: 'Cek zodiak dari tanggal lahir',
+      accent: const Color(0xFF7C3AED),
+      open: (context) => _push(context, const ZodiacPage()),
+    ),
+    _FeatureItem(
+      feature: PermissionFeature.createAccount,
+      icon: Icons.person_add_alt_1_rounded,
+      title: 'Create Account',
+      subtitle: 'Tambah user baru',
+      accent: const Color(0xFF0F766E),
+      open: (context) =>
+          _push(context, CreateAccountPage(currentUser: widget.user)),
+    ),
   ];
 
   void _selectTab(int index) {
+    final feature = _featureForTab(index);
+    if (feature != null && !PermissionService.canAccess(widget.user, feature)) {
+      _pushUnauthorized(context, feature);
+      return;
+    }
+
     setState(() => _selectedIndex = index);
+  }
+
+  PermissionFeature? _featureForTab(int index) {
+    switch (index) {
+      case 1:
+        return PermissionFeature.profile;
+      case 2:
+        return PermissionFeature.quiz;
+      default:
+        return null;
+    }
+  }
+
+  void _openFeature(BuildContext context, _FeatureItem item) {
+    if (!PermissionService.canAccess(widget.user, item.feature)) {
+      _pushUnauthorized(context, item.feature);
+      return;
+    }
+
+    item.open(context);
   }
 
   void _push(BuildContext context, Widget page) {
@@ -120,6 +181,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _pushUnauthorized(BuildContext context, PermissionFeature feature) {
+    _push(context, UnauthorizedPage(user: widget.user, feature: feature));
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -130,8 +195,22 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final pages = [
       _buildHomePage(context),
-      const ProfilePage(),
-      const QuizPage(),
+      PermissionGuard(
+        user: widget.user,
+        feature: PermissionFeature.profile,
+        child: ProfilePage(
+          currentUser: widget.user,
+          canViewAllProfiles: PermissionService.canAccess(
+            widget.user,
+            PermissionFeature.viewAllProfiles,
+          ),
+        ),
+      ),
+      PermissionGuard(
+        user: widget.user,
+        feature: PermissionFeature.quiz,
+        child: const QuizPage(),
+      ),
       _buildCategoriesPage(context),
     ];
 
@@ -174,10 +253,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHomePage(BuildContext context) {
-    final user = User.defaultUser();
     final width = MediaQuery.sizeOf(context).width;
     final padding = width < 390 ? 16.0 : 20.0;
     final featured = _filteredFeatures.take(6).toList();
+    final userName = widget.user.profile.namaLengkap.isEmpty
+        ? widget.user.username
+        : widget.user.profile.namaLengkap;
+    final accessCount = _visibleFeatures.length;
+    final progress = _features.isEmpty
+        ? 0.0
+        : (accessCount / _features.length * 100).clamp(0, 100).toDouble();
 
     return SafeArea(
       bottom: false,
@@ -186,7 +271,9 @@ class _HomePageState extends State<HomePage> {
         slivers: [
           SliverToBoxAdapter(
             child: _HomeHeader(
-              userName: user.name,
+              userName: userName,
+              roleLabel: widget.user.levelUser.label,
+              divisionName: widget.user.profile.namaDivisi,
               query: _query,
               controller: _searchController,
               onQueryChanged: (value) => setState(() => _query = value),
@@ -194,16 +281,14 @@ class _HomePageState extends State<HomePage> {
                 _searchController.clear();
                 setState(() => _query = '');
               },
+              onLogout: widget.onLogout,
             ),
           ),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(padding, 12, padding, 118),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _StaggeredIn(
-                  delay: 20,
-                  child: _WelcomeCard(userName: user.name),
-                ),
+                _StaggeredIn(delay: 20, child: _WelcomeCard(user: widget.user)),
                 const SizedBox(height: 18),
                 SectionHeader(
                   title: _query.isEmpty ? 'Fitur populer' : 'Hasil pencarian',
@@ -233,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                           title: item.title,
                           subtitle: item.subtitle,
                           color: item.accent,
-                          onTap: () => item.open(context),
+                          onTap: () => _openFeature(context, item),
                         ),
                       );
                     },
@@ -246,9 +331,9 @@ class _HomePageState extends State<HomePage> {
                         delay: 50,
                         child: _StatCard(
                           icon: Icons.menu_book_rounded,
-                          title: 'Course',
-                          value: '${user.completedCourses}',
-                          subtitle: 'Completed',
+                          title: 'Akses',
+                          value: '$accessCount',
+                          subtitle: 'Fitur',
                         ),
                       ),
                     ),
@@ -258,9 +343,9 @@ class _HomePageState extends State<HomePage> {
                         delay: 80,
                         child: _StatCard(
                           icon: Icons.quiz_rounded,
-                          title: 'Quiz',
-                          value: '${user.completedQuizzes}',
-                          subtitle: 'Completed',
+                          title: 'Level',
+                          value: '${widget.user.idLevelUser}',
+                          subtitle: widget.user.levelUser.label,
                         ),
                       ),
                     ),
@@ -269,7 +354,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 14),
                 _StaggeredIn(
                   delay: 120,
-                  child: _ProgressCard(progress: user.learningProgress),
+                  child: _ProgressCard(progress: progress),
                 ),
                 const SizedBox(height: 24),
                 SectionHeader(
@@ -283,11 +368,14 @@ class _HomePageState extends State<HomePage> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
-                    itemCount: _features.length,
+                    itemCount: _visibleFeatures.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(width: 10),
                     itemBuilder: (context, index) {
-                      return _QuickAction(item: _features[index]);
+                      return _QuickAction(
+                        item: _visibleFeatures[index],
+                        onOpen: (item) => _openFeature(context, item),
+                      );
                     },
                   ),
                 ),
@@ -312,7 +400,7 @@ class _HomePageState extends State<HomePage> {
             padding: EdgeInsets.fromLTRB(padding, 20, padding, 118),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _CategoriesHeader(total: _features.length),
+                _CategoriesHeader(total: _visibleFeatures.length),
                 const SizedBox(height: 16),
                 GridView.builder(
                   shrinkWrap: true,
@@ -323,9 +411,9 @@ class _HomePageState extends State<HomePage> {
                     crossAxisSpacing: 12,
                     childAspectRatio: width < 380 ? 0.86 : 0.96,
                   ),
-                  itemCount: _features.length,
+                  itemCount: _visibleFeatures.length,
                   itemBuilder: (context, index) {
-                    final item = _features[index];
+                    final item = _visibleFeatures[index];
                     return _StaggeredIn(
                       delay: 30 * index,
                       child: FeatureCard(
@@ -333,7 +421,7 @@ class _HomePageState extends State<HomePage> {
                         title: item.title,
                         subtitle: item.subtitle,
                         color: item.accent,
-                        onTap: () => item.open(context),
+                        onTap: () => _openFeature(context, item),
                       ),
                     );
                   },
@@ -348,16 +436,26 @@ class _HomePageState extends State<HomePage> {
 
   List<_FeatureItem> get _filteredFeatures {
     final normalized = _query.trim().toLowerCase();
-    if (normalized.isEmpty) return _features;
+    if (normalized.isEmpty) return _visibleFeatures;
 
-    return _features.where((feature) {
+    return _visibleFeatures.where((feature) {
       return feature.title.toLowerCase().contains(normalized) ||
           feature.subtitle.toLowerCase().contains(normalized);
     }).toList();
   }
+
+  List<_FeatureItem> get _visibleFeatures {
+    return _features
+        .where(
+          (feature) =>
+              PermissionService.canAccess(widget.user, feature.feature),
+        )
+        .toList(growable: false);
+  }
 }
 
 class _FeatureItem {
+  final PermissionFeature feature;
   final IconData icon;
   final String title;
   final String subtitle;
@@ -365,6 +463,7 @@ class _FeatureItem {
   final void Function(BuildContext context) open;
 
   const _FeatureItem({
+    required this.feature,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -375,17 +474,23 @@ class _FeatureItem {
 
 class _HomeHeader extends StatelessWidget {
   final String userName;
+  final String roleLabel;
+  final String divisionName;
   final String query;
   final TextEditingController controller;
   final ValueChanged<String> onQueryChanged;
   final VoidCallback onClear;
+  final Future<void> Function() onLogout;
 
   const _HomeHeader({
     required this.userName,
+    required this.roleLabel,
+    required this.divisionName,
     required this.query,
     required this.controller,
     required this.onQueryChanged,
     required this.onClear,
+    required this.onLogout,
   });
 
   @override
@@ -401,9 +506,9 @@ class _HomeHeader extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.grid_view_rounded),
-                tooltip: 'Menu',
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout_rounded),
+                tooltip: 'Logout',
               ),
               const Spacer(),
               Text(
@@ -457,6 +562,17 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$roleLabel - ${divisionName.isEmpty ? 'Tanpa divisi' : divisionName}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
           const SizedBox(height: 18),
           TextField(
             controller: controller,
@@ -480,9 +596,9 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _WelcomeCard extends StatelessWidget {
-  final String userName;
+  final AppUser user;
 
-  const _WelcomeCard({required this.userName});
+  const _WelcomeCard({required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +612,7 @@ class _WelcomeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome!',
+                  'Welcome, ${user.profile.nama.isEmpty ? user.username : user.profile.nama}!',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w900,
                     color: AppPalette.navy,
@@ -504,7 +620,7 @@ class _WelcomeCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Lanjutkan belajar dan jelajahi fitur yang tersedia.',
+                  'Status ${user.statusLabel}. Jelajahi fitur sesuai akses ${user.levelUser.label}.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.35,
@@ -641,14 +757,15 @@ class _ProgressCard extends StatelessWidget {
 
 class _QuickAction extends StatelessWidget {
   final _FeatureItem item;
+  final ValueChanged<_FeatureItem> onOpen;
 
-  const _QuickAction({required this.item});
+  const _QuickAction({required this.item, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return _Pressable(
-      onTap: () => item.open(context),
+      onTap: () => onOpen(item),
       child: SizedBox(
         width: 88,
         child: Column(

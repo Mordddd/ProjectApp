@@ -3,11 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+import '../models/app_user.dart';
 import '../models/user_profile.dart';
 import '../widgets/app_components.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final AppUser? currentUser;
+  final bool canViewAllProfiles;
+
+  const ProfilePage({
+    super.key,
+    this.currentUser,
+    this.canViewAllProfiles = true,
+  });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -36,6 +44,42 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _initializeProfiles() {
     _allProfiles = UserProfile.getMockProfiles();
+    final loggedInProfile = widget.currentUser?.profile;
+    if (loggedInProfile != null) {
+      _allProfiles[0] = _allProfiles[0].copyWith(
+        id: '${loggedInProfile.idProfile}',
+        name: loggedInProfile.namaLengkap.isEmpty
+            ? loggedInProfile.name
+            : loggedInProfile.namaLengkap,
+        bio: loggedInProfile.bio.isEmpty
+            ? 'Belum ada deskripsi profil.'
+            : loggedInProfile.bio,
+        hobby: loggedInProfile.hobby.isEmpty
+            ? 'Belum diisi'
+            : loggedInProfile.hobby,
+        joinDate: loggedInProfile.joinDate.isEmpty
+            ? _allProfiles[0].joinDate
+            : loggedInProfile.joinDate,
+        isCurrentUser: true,
+        idProfile: loggedInProfile.idProfile,
+        nama: loggedInProfile.nama,
+        namaLengkap: loggedInProfile.namaLengkap,
+        nik: loggedInProfile.nik,
+        alamat: loggedInProfile.alamat,
+        noTelp: loggedInProfile.noTelp,
+        idDivisi: loggedInProfile.idDivisi,
+        email: loggedInProfile.email,
+        pendidikan: loggedInProfile.pendidikan,
+        idHobyImage: loggedInProfile.idHobyImage,
+        idHobyMovie: loggedInProfile.idHobyMovie,
+        kodeDivisi: loggedInProfile.kodeDivisi,
+        namaDivisi: loggedInProfile.namaDivisi,
+        namaImage: loggedInProfile.namaImage,
+        namafileImage: loggedInProfile.namafileImage,
+        namaMovie: loggedInProfile.namaMovie,
+        namafileMovie: loggedInProfile.namafileMovie,
+      );
+    }
     _currentUser = _allProfiles[0]; // First profile is current user
   }
 
@@ -186,23 +230,25 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final selectedTab = widget.canViewAllProfiles ? _selectedTab : 0;
 
     return Scaffold(
       backgroundColor: colors.surface,
       appBar: AppBar(title: const Text('Profil')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: ModernTabSelector(
-              labels: const ['Profil Saya', 'Lihat Profil'],
-              icons: const [Icons.person_rounded, Icons.people_alt_rounded],
-              selectedIndex: _selectedTab,
-              onChanged: (index) => setState(() => _selectedTab = index),
+          if (widget.canViewAllProfiles)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: ModernTabSelector(
+                labels: const ['Profil Saya', 'Lihat Profil'],
+                icons: const [Icons.person_rounded, Icons.people_alt_rounded],
+                selectedIndex: _selectedTab,
+                onChanged: (index) => setState(() => _selectedTab = index),
+              ),
             ),
-          ),
           Expanded(
-            child: _selectedTab == 0
+            child: selectedTab == 0
                 ? _buildMyProfileTab()
                 : _buildBrowseProfilesTab(),
           ),

@@ -1,15 +1,18 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_application_1/database/app_database.dart';
 import 'package:flutter_application_1/main.dart';
 
 void main() {
-  testWidgets('Learning Hub smoke test', (WidgetTester tester) async {
+  testWidgets('admin can login and access all menu features', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
 
-    await tester.pumpWidget(const MyApp());
-    await tester.pumpAndSettle();
+    await _login(tester, 'admin', 'admin123');
 
     expect(find.text('Learning Hub'), findsOneWidget);
     expect(find.text('Fitur populer'), findsOneWidget);
@@ -21,5 +24,136 @@ void main() {
     expect(find.text('Sorting'), findsOneWidget);
     expect(find.text('Urutkan data angka'), findsOneWidget);
     expect(find.text('Kelola profil dan video anggota'), findsNothing);
+
+    await tester.enterText(find.byType(TextField).first, 'zodiac');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Zodiac'), findsOneWidget);
+    expect(find.text('Cek zodiak dari tanggal lahir'), findsOneWidget);
+
+    await tester.tap(find.text('Fitur').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Sorting'), findsOneWidget);
+    expect(find.text('Max & Min'), findsOneWidget);
   });
+
+  testWidgets('customer only sees customer-level features', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _login(tester, 'customer', 'customer123');
+
+    await tester.tap(find.text('Fitur').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Polling'), findsWidgets);
+    expect(find.text('Zodiac'), findsWidgets);
+    expect(find.text('Create Account'), findsNothing);
+    expect(find.text('Sorting'), findsNothing);
+    expect(find.text('Calculator'), findsNothing);
+    expect(find.text('Max & Min'), findsNothing);
+  });
+
+  testWidgets('blocked user cannot enter the app', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'blocked');
+    await tester.enterText(find.byType(TextFormField).at(1), 'blocked123');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('berstatus no valid'), findsOneWidget);
+    expect(find.text('Fitur populer'), findsNothing);
+  });
+
+  test('Zodiac records support Drift SQLite CRUD', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    final id = await database.createZodiacRecord(
+      _zodiacRecord(
+        day: 21,
+        month: 6,
+        zodiacName: 'Cancer',
+        dateRange: '21 Juni - 22 Juli',
+        element: 'Air',
+        symbol: 'Kepiting',
+      ),
+    );
+
+    var records = await database.watchZodiacRecords().first;
+    expect(records, hasLength(1));
+    expect(records.single.id, id);
+    expect(records.single.zodiacName, 'Cancer');
+
+    await database.updateZodiacRecord(
+      id: id,
+      record: _zodiacRecord(
+        day: 23,
+        month: 7,
+        zodiacName: 'Leo',
+        dateRange: '23 Juli - 22 Agustus',
+        element: 'Api',
+        symbol: 'Singa',
+      ),
+    );
+
+    records = await database.watchZodiacRecords().first;
+    expect(records, hasLength(1));
+    expect(records.single.zodiacName, 'Leo');
+    expect(records.single.day, 23);
+
+    await database.deleteZodiacRecord(id);
+
+    records = await database.watchZodiacRecords().first;
+    expect(records, isEmpty);
+  });
+}
+
+Future<void> _login(
+  WidgetTester tester,
+  String username,
+  String password,
+) async {
+  await tester.pumpWidget(const MyApp());
+  await tester.pumpAndSettle();
+
+  expect(find.text('Login'), findsOneWidget);
+
+  await tester.enterText(find.byType(TextFormField).at(0), username);
+  await tester.enterText(find.byType(TextFormField).at(1), password);
+  await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
+  await tester.pumpAndSettle();
+
+  expect(find.text('Fitur populer'), findsOneWidget);
+}
+
+ZodiacRecordsCompanion _zodiacRecord({
+  required int day,
+  required int month,
+  required String zodiacName,
+  required String dateRange,
+  required String element,
+  required String symbol,
+}) {
+  return ZodiacRecordsCompanion.insert(
+    day: day,
+    month: month,
+    zodiacName: zodiacName,
+    dateRange: dateRange,
+    character: 'Karakter umum',
+    strengths: 'Kelebihan',
+    weaknesses: 'Kekurangan',
+    compatible: 'Zodiak cocok',
+    lessCompatible: 'Zodiak kurang cocok',
+    element: element,
+    symbol: symbol,
+    accentValue: 0xFF123D73,
+  );
 }
