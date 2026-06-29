@@ -1,4 +1,4 @@
-# flutter_application_1
+# EduHub
 
 A new Flutter project.
 
