@@ -13,6 +13,12 @@ class _SortingPageState extends State<SortingPage> {
 
   Map<String, String> results = {};
 
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   void processSorting() {
     final numbers = controller.text
         .split(',')

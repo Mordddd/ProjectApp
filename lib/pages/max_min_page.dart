@@ -32,14 +32,22 @@ class _MaxMinPageState extends State<MaxMinPage> {
 
   Future<void> loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       history = prefs.getStringList('history') ?? [];
     });
   }
 
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   Future<void> saveHistory(String data) async {
     final prefs = await SharedPreferences.getInstance();
-    history.insert(0, data);
+    if (!mounted) return;
+    setState(() => history.insert(0, data));
     await prefs.setStringList('history', history);
   }
 

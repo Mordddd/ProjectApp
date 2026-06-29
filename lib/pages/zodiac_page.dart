@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../database/app_database.dart';
+import '../config/supabase_config.dart';
+import '../services/zodiac_repository.dart';
 import '../widgets/app_components.dart';
 
 class ZodiacPage extends StatefulWidget {
@@ -18,7 +20,8 @@ class _ZodiacPageState extends State<ZodiacPage> {
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
 
-  late final AppDatabase _database;
+  late final ZodiacRepository _repository;
+  AppDatabase? _ownedDatabase;
   late final bool _ownsDatabase;
 
   ZodiacResult? _selectedResult;
@@ -253,8 +256,15 @@ class _ZodiacPageState extends State<ZodiacPage> {
   @override
   void initState() {
     super.initState();
-    _ownsDatabase = widget.database == null;
-    _database = widget.database ?? AppDatabase();
+    _ownsDatabase = widget.database == null && !SupabaseConfig.isConfigured;
+    if (widget.database != null) {
+      _repository = LocalZodiacRepository(widget.database!);
+    } else if (SupabaseConfig.isConfigured) {
+      _repository = SupabaseZodiacRepository(SupabaseConfig.client);
+    } else {
+      _ownedDatabase = AppDatabase();
+      _repository = LocalZodiacRepository(_ownedDatabase!);
+    }
   }
 
   void _showSnack(String message) {
@@ -308,13 +318,13 @@ class _ZodiacPageState extends State<ZodiacPage> {
     try {
       final editingId = _editingRecordId;
       if (editingId == null) {
-        await _database.createZodiacRecord(
+        await _repository.createZodiacRecord(
           result.toCompanion(day: birthDate.day, month: birthDate.month),
         );
         if (!mounted) return;
-        _showSnack('Data zodiac disimpan ke SQLite.');
+        _showSnack('Data zodiac disimpan ke ${_repository.storageLabel}.');
       } else {
-        await _database.updateZodiacRecord(
+        await _repository.updateZodiacRecord(
           id: editingId,
           record: result.toCompanion(
             day: birthDate.day,
@@ -360,14 +370,16 @@ class _ZodiacPageState extends State<ZodiacPage> {
   }
 
   Future<void> _deleteRecord(ZodiacRecord record) async {
-    await _database.deleteZodiacRecord(record.id);
+    await _repository.deleteZodiacRecord(record.id);
     if (!mounted) return;
 
     if (_editingRecordId == record.id) {
       _reset(showMessage: false);
     }
 
-    _showSnack('Riwayat ${record.zodiacName} dihapus dari SQLite.');
+    _showSnack(
+      'Riwayat ${record.zodiacName} dihapus dari ${_repository.storageLabel}.',
+    );
   }
 
   void _reset({bool showMessage = true}) {
@@ -389,7 +401,7 @@ class _ZodiacPageState extends State<ZodiacPage> {
     _dayController.dispose();
     _monthController.dispose();
     if (_ownsDatabase) {
-      _database.close();
+      _ownedDatabase?.close();
     }
     super.dispose();
   }
@@ -452,7 +464,7 @@ class _ZodiacPageState extends State<ZodiacPage> {
             ),
             const SizedBox(height: 20),
             _HistorySection(
-              database: _database,
+              repository: _repository,
               onSelect: _selectRecord,
               onEdit: _startEditing,
               onDelete: _deleteRecord,
@@ -707,13 +719,13 @@ class _ZodiacResultCard extends StatelessWidget {
 }
 
 class _HistorySection extends StatelessWidget {
-  final AppDatabase database;
+  final ZodiacRepository repository;
   final ValueChanged<ZodiacRecord> onSelect;
   final ValueChanged<ZodiacRecord> onEdit;
   final Future<void> Function(ZodiacRecord record) onDelete;
 
   const _HistorySection({
-    required this.database,
+    required this.repository,
     required this.onSelect,
     required this.onEdit,
     required this.onDelete,
@@ -724,7 +736,7 @@ class _HistorySection extends StatelessWidget {
     final theme = Theme.of(context);
 
     return StreamBuilder<List<ZodiacRecord>>(
-      stream: database.watchZodiacRecords(),
+      stream: repository.watchZodiacRecords(),
       builder: (context, snapshot) {
         final records = snapshot.data ?? const <ZodiacRecord>[];
 
@@ -745,7 +757,7 @@ class _HistorySection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Riwayat SQLite',
+                          'Riwayat ${repository.storageLabel}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),

@@ -2,6 +2,7 @@ import 'level_user.dart';
 import 'user_profile.dart';
 
 class AppUser {
+  final String? authId;
   final int idUser;
   final String username;
   final String pass;
@@ -12,6 +13,7 @@ class AppUser {
   final LevelUser levelUser;
 
   AppUser({
+    this.authId,
     required this.idUser,
     required this.username,
     required this.pass,
@@ -39,6 +41,7 @@ class AppUser {
 
   Map<String, dynamic> toJson() {
     return {
+      'auth_id': authId,
       'id_user': idUser,
       'username': username,
       'pass': pass,
@@ -53,6 +56,7 @@ class AppUser {
     final idLevelUser = json['id_level_user'] as int? ?? 4;
     final profileJson = json['profile'];
     return AppUser(
+      authId: json['auth_id'] as String?,
       idUser: json['id_user'] as int? ?? 0,
       username: json['username'] as String? ?? '',
       pass: json['pass'] as String? ?? '',
@@ -67,6 +71,7 @@ class AppUser {
   }
 
   AppUser copyWith({
+    String? authId,
     int? idUser,
     String? username,
     String? pass,
@@ -78,6 +83,7 @@ class AppUser {
   }) {
     final nextLevelId = idLevelUser ?? this.idLevelUser;
     return AppUser(
+      authId: authId ?? this.authId,
       idUser: idUser ?? this.idUser,
       username: username ?? this.username,
       pass: pass ?? this.pass,

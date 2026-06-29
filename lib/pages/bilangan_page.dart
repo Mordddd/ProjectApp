@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/app_components.dart';
 
@@ -119,6 +119,12 @@ class _BilanganPageState extends State<BilanganPage>
 
       fibonacci = fibonacci.reversed.toList();
     });
+  }
+
+  @override
+  void dispose() {
+    primeController.dispose();
+    super.dispose();
   }
 
   // CHART

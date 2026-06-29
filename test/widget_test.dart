@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/database/app_database.dart';
 import 'package:flutter_application_1/main.dart';
+import 'package:flutter_application_1/models/level_user.dart';
+import 'package:flutter_application_1/models/permission.dart';
+import 'package:flutter_application_1/services/auth_service.dart';
+import 'package:flutter_application_1/services/permission_service.dart';
 
 void main() {
   testWidgets('admin can login and access all menu features', (
@@ -35,6 +39,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Access Control'), findsOneWidget);
     expect(find.text('Sorting'), findsOneWidget);
     expect(find.text('Max & Min'), findsOneWidget);
   });
@@ -70,6 +75,44 @@ void main() {
 
     expect(find.textContaining('berstatus no valid'), findsOneWidget);
     expect(find.text('Fitur populer'), findsNothing);
+  });
+
+  test('role permission overrides persist and replace defaults', () async {
+    SharedPreferences.setMockInitialValues({});
+    await PermissionService.initialize();
+    final login = await AuthService().login('customer', 'customer123');
+    final customer = login.user!;
+
+    expect(
+      PermissionService.canAccess(customer, PermissionFeature.sorting),
+      isFalse,
+    );
+
+    await PermissionService.updatePermissionForRole(
+      LevelUser.customer,
+      PermissionFeature.sorting,
+      true,
+    );
+    expect(
+      PermissionService.canAccess(customer, PermissionFeature.sorting),
+      isTrue,
+    );
+
+    await PermissionService.initialize();
+    expect(
+      PermissionService.canAccess(customer, PermissionFeature.sorting),
+      isTrue,
+    );
+
+    await PermissionService.updatePermissionForRole(
+      LevelUser.customer,
+      PermissionFeature.sorting,
+      false,
+    );
+    expect(
+      PermissionService.canAccess(customer, PermissionFeature.sorting),
+      isFalse,
+    );
   });
 
   test('Zodiac records support Drift SQLite CRUD', () async {

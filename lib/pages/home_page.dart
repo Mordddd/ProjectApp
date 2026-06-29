@@ -11,6 +11,7 @@ import 'create_account_page.dart';
 import 'discount_page.dart';
 import 'max_min_page.dart';
 import 'multi_quiz_page.dart';
+import 'permission_management_page.dart';
 import 'unauthorized_page.dart';
 import 'poll_page.dart';
 import 'profile_page.dart';
@@ -123,6 +124,20 @@ class _HomePageState extends State<HomePage> {
       open: (context) =>
           _push(context, CreateAccountPage(currentUser: widget.user)),
     ),
+    _FeatureItem(
+      feature: PermissionFeature.accessControl,
+      icon: Icons.admin_panel_settings_rounded,
+      title: 'Access Control',
+      subtitle: 'Kelola izin fitur tiap role',
+      accent: const Color(0xFF082052),
+      open: (context) async {
+        await _push(
+          context,
+          PermissionManagementPage(currentUser: widget.user),
+        );
+        if (mounted) setState(() {});
+      },
+    ),
   ];
 
   void _selectTab(int index) {
@@ -155,8 +170,8 @@ class _HomePageState extends State<HomePage> {
     item.open(context);
   }
 
-  void _push(BuildContext context, Widget page) {
-    Navigator.of(context).push(
+  Future<void> _push(BuildContext context, Widget page) async {
+    await Navigator.of(context).push<void>(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 220),
         reverseTransitionDuration: const Duration(milliseconds: 180),

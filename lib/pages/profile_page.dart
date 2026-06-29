@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import '../models/app_user.dart';
 import '../models/user_profile.dart';
+import '../services/auth_service.dart';
 import '../widgets/app_components.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -29,6 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
   File? imageFile;
   Map<String, File?> profileVideos = {};
   final picker = ImagePicker();
+  final _authService = AuthService();
 
   // Browse profiles
   late List<UserProfile> _allProfiles;
@@ -40,6 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _initializeProfiles();
     loadData();
     _loadProfileVideos();
+    if (AuthService.usesSupabase) _loadRemoteProfiles();
   }
 
   void _initializeProfiles() {
@@ -47,7 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final loggedInProfile = widget.currentUser?.profile;
     if (loggedInProfile != null) {
       _allProfiles[0] = _allProfiles[0].copyWith(
-        id: '${loggedInProfile.idProfile}',
+        id: loggedInProfile.id,
         name: loggedInProfile.namaLengkap.isEmpty
             ? loggedInProfile.name
             : loggedInProfile.namaLengkap,
@@ -85,15 +88,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
 
     setState(() {
-      _currentUser = _currentUser.copyWith(
-        name: prefs.getString('profile_name') ?? _currentUser.name,
-        bio: prefs.getString('profile_bio') ?? _currentUser.bio,
-        hobby: prefs.getString('profile_hobby') ?? _currentUser.hobby,
-      );
+      if (!AuthService.usesSupabase) {
+        _currentUser = _currentUser.copyWith(
+          name:
+              prefs.getString('${_currentProfilePrefix}_name') ??
+              _currentUser.name,
+          bio:
+              prefs.getString('${_currentProfilePrefix}_bio') ??
+              _currentUser.bio,
+          hobby:
+              prefs.getString('${_currentProfilePrefix}_hobby') ??
+              _currentUser.hobby,
+        );
+      }
 
-      String? imagePath = prefs.getString('profile_image');
+      String? imagePath = prefs.getString('${_currentProfilePrefix}_image');
       if (imagePath != null) imageFile = File(imagePath);
     });
 
@@ -101,7 +113,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadOtherProfilesData() async {
+    if (AuthService.usesSupabase) return;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
 
     setState(() {
       for (int i = 1; i < _allProfiles.length; i++) {
@@ -135,20 +149,38 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
 
+    if (!mounted) return;
     setState(() {
       profileVideos = videos;
     });
   }
 
   Future<void> saveData() async {
+    try {
+      if (AuthService.usesSupabase) {
+        await _authService.updateProfile(_currentUser);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menyimpan profil ke server.')),
+        );
+      }
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString('profile_name', _currentUser.name);
-    await prefs.setString('profile_bio', _currentUser.bio);
-    await prefs.setString('profile_hobby', _currentUser.hobby);
+    if (!AuthService.usesSupabase) {
+      await prefs.setString('${_currentProfilePrefix}_name', _currentUser.name);
+      await prefs.setString('${_currentProfilePrefix}_bio', _currentUser.bio);
+      await prefs.setString(
+        '${_currentProfilePrefix}_hobby',
+        _currentUser.hobby,
+      );
+    }
 
     if (imageFile != null) {
-      await prefs.setString('profile_image', imageFile!.path);
+      await prefs.setString('${_currentProfilePrefix}_image', imageFile!.path);
     }
 
     if (mounted) {
@@ -162,13 +194,28 @@ class _ProfilePageState extends State<ProfilePage> {
     int profileIndex,
     UserProfile updatedProfile,
   ) async {
+    try {
+      if (AuthService.usesSupabase) {
+        await _authService.updateProfile(updatedProfile);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menyimpan profil ke server.')),
+        );
+      }
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final profileId = updatedProfile.id;
 
-    await prefs.setString('profile_${profileId}_name', updatedProfile.name);
-    await prefs.setString('profile_${profileId}_bio', updatedProfile.bio);
-    await prefs.setString('profile_${profileId}_hobby', updatedProfile.hobby);
+    if (!AuthService.usesSupabase) {
+      await prefs.setString('profile_${profileId}_name', updatedProfile.name);
+      await prefs.setString('profile_${profileId}_bio', updatedProfile.bio);
+      await prefs.setString('profile_${profileId}_hobby', updatedProfile.hobby);
+    }
 
+    if (!mounted) return;
     setState(() {
       _allProfiles[profileIndex] = updatedProfile;
     });
@@ -198,7 +245,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         imageFile = File(picked.path);
       });
@@ -208,7 +255,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickVideo() async {
     final picked = await picker.pickVideo(source: ImageSource.gallery);
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         profileVideos[_currentUser.id] = File(picked.path);
       });
@@ -219,11 +266,34 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickVideoForProfile(String profileId) async {
     final picked = await picker.pickVideo(source: ImageSource.gallery);
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         profileVideos[profileId] = File(picked.path);
       });
       await _saveProfileVideo(profileId);
+    }
+  }
+
+  String get _currentProfilePrefix => 'profile_${_currentUser.id}';
+
+  Future<void> _loadRemoteProfiles() async {
+    try {
+      final users = await _authService.getAllUsers();
+      if (!mounted || users.isEmpty) return;
+      final currentId = widget.currentUser?.authId;
+      users.sort((a, b) {
+        if (a.authId == currentId) return -1;
+        if (b.authId == currentId) return 1;
+        return a.profile.name.compareTo(b.profile.name);
+      });
+      setState(() {
+        _allProfiles = users.map((user) => user.profile).toList();
+        _currentUser = _allProfiles.first;
+        _currentProfileIndex = _allProfiles.length > 1 ? 1 : 0;
+      });
+      await _loadProfileVideos();
+    } catch (_) {
+      // The current profile remains usable if browsing is unavailable.
     }
   }
 
@@ -453,12 +523,12 @@ class _ProfilePageState extends State<ProfilePage> {
         .toList();
   }
 
-  void _showEditDialog(UserProfile profile, int profileIndex) {
-    TextEditingController nameC = TextEditingController(text: profile.name);
-    TextEditingController bioC = TextEditingController(text: profile.bio);
-    TextEditingController hobbyC = TextEditingController(text: profile.hobby);
+  Future<void> _showEditDialog(UserProfile profile, int profileIndex) async {
+    final nameC = TextEditingController(text: profile.name);
+    final bioC = TextEditingController(text: profile.bio);
+    final hobbyC = TextEditingController(text: profile.hobby);
 
-    showDialog(
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Profil'),
@@ -519,6 +589,9 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+    nameC.dispose();
+    bioC.dispose();
+    hobbyC.dispose();
   }
 }
 

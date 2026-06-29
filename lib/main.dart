@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'config/supabase_config.dart';
 import 'models/app_user.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'services/auth_service.dart';
+import 'services/permission_repository.dart';
+import 'services/permission_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseConfig.initialize();
   runApp(const MyApp());
 }
 
@@ -55,12 +60,24 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    _currentUserFuture = _authService.getCurrentUser();
+    _currentUserFuture = _loadSession();
+  }
+
+  Future<AppUser?> _loadSession() async {
+    final user = await _authService.getCurrentUser();
+    if (user != null) {
+      await PermissionService.initialize(
+        repository: SupabaseConfig.isConfigured
+            ? SupabasePermissionRepository(SupabaseConfig.client)
+            : LocalPermissionRepository(),
+      );
+    }
+    return user;
   }
 
   void _refreshSession() {
     setState(() {
-      _currentUserFuture = _authService.getCurrentUser();
+      _currentUserFuture = _loadSession();
     });
   }
 
@@ -79,6 +96,13 @@ class _AuthGateState extends State<AuthGate> {
           return const _SplashScreen();
         }
 
+        if (snapshot.hasError) {
+          return _StartupError(
+            message: snapshot.error.toString(),
+            onRetry: _refreshSession,
+          );
+        }
+
         final user = snapshot.data;
         if (user == null) {
           return LoginPage(onLoginSuccess: (_) => _refreshSession());
@@ -86,6 +110,39 @@ class _AuthGateState extends State<AuthGate> {
 
         return HomePage(user: user, onLogout: _logout);
       },
+    );
+  }
+}
+
+class _StartupError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _StartupError({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 48),
+              const SizedBox(height: 12),
+              const Text('Gagal memuat data aplikasi.'),
+              const SizedBox(height: 8),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: const Text('Coba lagi'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

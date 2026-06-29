@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class AppPalette {
   AppPalette._();
 
-  static const navy = Color(0xFF123D73);
+  static const navy = Color(0xFF082052);
   static const deepNavy = Color(0xFF0F3A6D);
   static const ink = Color(0xFF14213D);
   static const muted = Color(0xFF6B7280);
-  static const surface = Color(0xFFF6F9FF);
+  static const surface = Color(0xFFF8F0E5);
   static const softBlue = Color(0xFFEEF4FF);
   static const line = Color(0xFFE3ECFA);
 }

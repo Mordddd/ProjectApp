@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/supabase_config.dart';
 import '../models/app_user.dart';
 import '../models/level_user.dart';
 import '../models/user_profile.dart';
@@ -26,7 +28,11 @@ class AuthService {
   static const _sessionKey = 'auth_current_username';
   static const _localUsersKey = 'auth_local_users';
 
+  static bool get usesSupabase => SupabaseConfig.isConfigured;
+
   Future<AuthResult> login(String username, String password) async {
+    if (usesSupabase) return _loginWithSupabase(username, password);
+
     final normalizedUsername = username.trim();
     final user = await _findUser(normalizedUsername);
 
@@ -47,11 +53,18 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    if (usesSupabase) {
+      await SupabaseConfig.client.auth.signOut();
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionKey);
   }
 
   Future<AppUser?> getCurrentUser() async {
+    if (usesSupabase) return _getSupabaseCurrentUser();
+
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString(_sessionKey);
     if (username == null || username.isEmpty) return null;
@@ -84,6 +97,23 @@ class AuthService {
     String kodeDivisi = 'GEN',
     String namaDivisi = 'General',
   }) async {
+    if (usesSupabase) {
+      return _createSupabaseAccount(
+        username: username,
+        password: password,
+        namaLengkap: namaLengkap,
+        levelUser: levelUser,
+        nama: nama,
+        nik: nik,
+        alamat: alamat,
+        noTelp: noTelp,
+        email: email,
+        pendidikan: pendidikan,
+        kodeDivisi: kodeDivisi,
+        namaDivisi: namaDivisi,
+      );
+    }
+
     final normalizedUsername = username.trim();
     final normalizedPassword = password.trim();
     final normalizedName = namaLengkap.trim();
@@ -145,7 +175,230 @@ class AuthService {
   }
 
   Future<List<AppUser>> getAllUsers() async {
+    if (usesSupabase) return _getSupabaseUsers();
     return [..._dummyUsers, ...await _getLocalUsers()];
+  }
+
+  Future<void> updateProfile(UserProfile profile) async {
+    if (!usesSupabase) return;
+    await SupabaseConfig.client
+        .from('profiles')
+        .update({
+          'full_name': profile.name.trim(),
+          'display_name': profile.name.trim(),
+          'bio': profile.bio.trim(),
+          'hobby': profile.hobby.trim(),
+        })
+        .eq('user_id', profile.id);
+  }
+
+  Future<AuthResult> _loginWithSupabase(
+    String username,
+    String password,
+  ) async {
+    final normalized = username.trim().toLowerCase();
+    if (normalized.isEmpty || password.isEmpty) {
+      return AuthResult.fail('Username dan password wajib diisi.');
+    }
+
+    try {
+      final email = normalized.contains('@')
+          ? normalized
+          : '$normalized@learninghub.local';
+      await SupabaseConfig.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      final user = await _fetchSupabaseUser();
+      if (user == null) {
+        return AuthResult.fail('Profil akun tidak ditemukan.');
+      }
+      if (!user.isValid) {
+        await SupabaseConfig.client.auth.signOut();
+        return AuthResult.fail(
+          'Akun "${user.username}" berstatus ${user.statusLabel} dan tidak boleh masuk aplikasi.',
+        );
+      }
+      return AuthResult.ok(user, 'Login berhasil.');
+    } on AuthException catch (error) {
+      return AuthResult.fail(_friendlyAuthError(error.message));
+    } catch (_) {
+      return AuthResult.fail(
+        'Tidak dapat terhubung ke server. Periksa koneksi dan konfigurasi Supabase.',
+      );
+    }
+  }
+
+  Future<AppUser?> _getSupabaseCurrentUser() async {
+    final user = await _fetchSupabaseUser();
+    if (user != null && !user.isValid) {
+      await SupabaseConfig.client.auth.signOut();
+      return null;
+    }
+    return user;
+  }
+
+  Future<AppUser?> _fetchSupabaseUser() async {
+    final authUser = SupabaseConfig.client.auth.currentUser;
+    if (authUser == null) return null;
+
+    final row = await SupabaseConfig.client
+        .from('profiles')
+        .select('*, roles!inner(id, code), divisions(code, name)')
+        .eq('user_id', authUser.id)
+        .single();
+    return _appUserFromSupabase(row);
+  }
+
+  Future<List<AppUser>> _getSupabaseUsers() async {
+    final rows = await SupabaseConfig.client
+        .from('profiles')
+        .select('*, roles!inner(id, code), divisions(code, name)')
+        .order('created_at');
+    return rows.map(_appUserFromSupabase).toList(growable: false);
+  }
+
+  Future<AuthResult> _createSupabaseAccount({
+    required String username,
+    required String password,
+    required String namaLengkap,
+    required LevelUser levelUser,
+    required String nama,
+    required String nik,
+    required String alamat,
+    required String noTelp,
+    required String email,
+    required String pendidikan,
+    required String kodeDivisi,
+    required String namaDivisi,
+  }) async {
+    final normalizedUsername = username.trim().toLowerCase();
+    if (normalizedUsername.isEmpty ||
+        password.length < 6 ||
+        namaLengkap.trim().isEmpty) {
+      return AuthResult.fail(
+        'Username, password minimal 6 karakter, dan nama lengkap wajib diisi.',
+      );
+    }
+    if (!RegExp(r'^[a-z0-9._-]+$').hasMatch(normalizedUsername)) {
+      return AuthResult.fail(
+        'Username hanya boleh berisi huruf kecil, angka, titik, garis bawah, atau tanda hubung.',
+      );
+    }
+
+    try {
+      final response = await SupabaseConfig.client.functions.invoke(
+        'admin-create-user',
+        body: {
+          'username': normalizedUsername,
+          'password': password,
+          'full_name': namaLengkap.trim(),
+          'display_name': nama.trim(),
+          'role_id': levelUser.id,
+          'nik': nik.trim(),
+          'address': alamat.trim(),
+          'phone': noTelp.trim(),
+          'contact_email': email.trim(),
+          'education': pendidikan.trim(),
+          'division_code': kodeDivisi.trim(),
+          'division_name': namaDivisi.trim(),
+        },
+      );
+      final data = response.data;
+      if (response.status < 200 || response.status >= 300) {
+        final message = data is Map ? data['error']?.toString() : null;
+        return AuthResult.fail(message ?? 'Gagal membuat akun.');
+      }
+      final created = data is Map ? data['profile'] : null;
+      if (created is! Map) {
+        return AuthResult.fail(
+          'Server mengembalikan data akun yang tidak valid.',
+        );
+      }
+      final user = _appUserFromSupabase(Map<String, dynamic>.from(created));
+      return AuthResult.ok(user, 'Akun berhasil dibuat.');
+    } catch (error) {
+      return AuthResult.fail(_friendlyRemoteError(error));
+    }
+  }
+
+  AppUser _appUserFromSupabase(Map<String, dynamic> row) {
+    final roleData = row['roles'];
+    final divisionData = row['divisions'];
+    final roleMap = roleData is Map ? roleData : const <String, dynamic>{};
+    final divisionMap = divisionData is Map
+        ? divisionData
+        : const <String, dynamic>{};
+    final roleId =
+        (row['role_id'] as num?)?.toInt() ??
+        (roleMap['id'] as num?)?.toInt() ??
+        LevelUser.customer.id;
+    final legacyId = (row['legacy_id'] as num?)?.toInt() ?? 0;
+    final createdAt = row['created_at']?.toString() ?? '';
+    final fullName = row['full_name']?.toString() ?? '';
+    final displayName = row['display_name']?.toString();
+    final status = row['account_status']?.toString() ?? 'blocked';
+
+    final profile = UserProfile(
+      id: row['user_id']?.toString() ?? '$legacyId',
+      name: fullName,
+      bio: row['bio']?.toString() ?? '',
+      photoPath: row['avatar_path']?.toString(),
+      videoUrl: row['video_path']?.toString(),
+      hobby: row['hobby']?.toString() ?? '',
+      joinDate: createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt,
+      idProfile: legacyId,
+      nama: (displayName == null || displayName.isEmpty)
+          ? fullName
+          : displayName,
+      namaLengkap: fullName,
+      nik: row['nik']?.toString() ?? '',
+      alamat: row['address']?.toString() ?? '',
+      noTelp: row['phone']?.toString() ?? '',
+      idDivisi: (row['division_id'] as num?)?.toInt() ?? 0,
+      email: row['contact_email']?.toString() ?? '',
+      pendidikan: row['education']?.toString() ?? '',
+      kodeDivisi: divisionMap['code']?.toString() ?? '',
+      namaDivisi: divisionMap['name']?.toString() ?? '',
+      namafileImage: row['avatar_path']?.toString() ?? '',
+      namafileMovie: row['video_path']?.toString() ?? '',
+    );
+
+    return AppUser(
+      authId: row['user_id']?.toString(),
+      idUser: legacyId,
+      username: row['username']?.toString() ?? '',
+      pass: '',
+      idProfile: legacyId,
+      idLevelUser: roleId,
+      idStatusValid: switch (status) {
+        'active' => '01',
+        'departed' => '03',
+        _ => '02',
+      },
+      profile: profile,
+      levelUser: LevelUser.fromId(roleId),
+    );
+  }
+
+  String _friendlyAuthError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login credentials')) {
+      return 'Username atau password salah.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Akun belum dikonfirmasi.';
+    }
+    return message;
+  }
+
+  String _friendlyRemoteError(Object error) {
+    final message = error.toString();
+    if (message.contains('already registered') ||
+        message.contains('duplicate key')) {
+      return 'Username sudah digunakan.';
+    }
+    return 'Gagal membuat akun: $message';
   }
 
   Future<AppUser?> _findUser(String username) async {

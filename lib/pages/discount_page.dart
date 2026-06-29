@@ -30,9 +30,16 @@ class _DiscountPageState extends State<DiscountPage> {
 
     final discount = double.tryParse(discountController.text);
 
-    if (price == null || discount == null) {
+    if (price == null || discount == null || price < 0) {
       setState(() {
         result = 'Masukkan angka yang valid!';
+      });
+      return;
+    }
+
+    if (discount < 0 || discount > 100) {
+      setState(() {
+        result = 'Diskon harus berada di antara 0% dan 100%.';
       });
       return;
     }
@@ -57,6 +64,13 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
     setState(() {
       result = '';
     });
+  }
+
+  @override
+  void dispose() {
+    priceController.dispose();
+    discountController.dispose();
+    super.dispose();
   }
 
   @override

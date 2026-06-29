@@ -92,7 +92,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Masuk dengan akun SSO simulasi',
+                    AuthService.usesSupabase
+                        ? 'Masuk dengan akun Learning Hub'
+                        : 'Masuk dengan akun SSO simulasi',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
@@ -174,20 +176,22 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  CustomCard(
-                    padding: const EdgeInsets.all(16),
-                    color: colors.primary.withValues(alpha: 0.08),
-                    shadows: const [],
-                    child: Text(
-                      'Akun demo: admin/admin123, supervisor/super123, staf/staf123, customer/customer123, blocked/blocked123.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        height: 1.45,
+                  if (!AuthService.usesSupabase) ...[
+                    const SizedBox(height: 16),
+                    CustomCard(
+                      padding: const EdgeInsets.all(16),
+                      color: colors.primary.withValues(alpha: 0.08),
+                      shadows: const [],
+                      child: Text(
+                        'Akun demo: admin/admin123, supervisor/super123, staf/staf123, customer/customer123, blocked/blocked123.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          height: 1.45,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
