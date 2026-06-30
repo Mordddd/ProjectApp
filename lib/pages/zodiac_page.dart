@@ -408,11 +408,10 @@ class _ZodiacPageState extends State<ZodiacPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final isEditing = _editingRecordId != null;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Zodiac')),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

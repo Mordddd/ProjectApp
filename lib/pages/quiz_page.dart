@@ -238,7 +238,7 @@ class _QuizPageState extends State<QuizPage> {
         isAnswered && question.checkAnswer(selectedIndices.toList());
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Quiz'),
         backgroundColor: Colors.transparent,

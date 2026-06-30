@@ -203,11 +203,11 @@ class _BilanganPageState extends State<BilanganPage>
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
 
       appBar: AppBar(
         title: const Text("Bilangan Lanjutan"),
-        backgroundColor: colors.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: colors.onSurface,
       ),
 

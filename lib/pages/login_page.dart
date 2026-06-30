@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/supabase_config.dart';
 import '../models/app_user.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_components.dart';
@@ -61,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
     final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       body: AppBackdrop(
         child: SafeArea(
           child: Center(
@@ -100,6 +101,13 @@ class _LoginPageState extends State<LoginPage> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ConnectionStatus(
+                      connected: AuthService.usesSupabase,
+                      label: AuthService.usesSupabase
+                          ? 'Supabase aktif · ${SupabaseConfig.projectHost}'
+                          : 'Mode demo lokal',
                     ),
                     const SizedBox(height: 24),
                     CustomCard(
@@ -213,6 +221,45 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ConnectionStatus extends StatelessWidget {
+  final bool connected;
+  final String label;
+
+  const _ConnectionStatus({required this.connected, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = connected ? const Color(0xFF0F9F6E) : colors.tertiary;
+
+    return Semantics(
+      label: label,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            connected ? Icons.cloud_done_rounded : Icons.storage_rounded,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

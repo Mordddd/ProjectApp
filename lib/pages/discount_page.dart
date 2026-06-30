@@ -79,7 +79,7 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Kalkulator Diskon')),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

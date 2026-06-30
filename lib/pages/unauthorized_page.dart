@@ -18,7 +18,7 @@ class UnauthorizedPage extends StatelessWidget {
     final roleLabel = user?.levelUser.label ?? 'user';
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Unauthorized')),
       body: SafeArea(
         child: Center(

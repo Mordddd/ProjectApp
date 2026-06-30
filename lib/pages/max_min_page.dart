@@ -165,7 +165,7 @@ class _MaxMinPageState extends State<MaxMinPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text("Data Analyzer")),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

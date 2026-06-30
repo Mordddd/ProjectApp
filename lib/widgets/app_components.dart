@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 class AppPalette {
@@ -43,36 +45,72 @@ class AppBackdrop extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? const [Color(0xFF0B1220), Color(0xFF101A2D), Color(0xFF0F172A)]
-              : const [Color(0xFFFBF8F1), Color(0xFFF4F7FF), Color(0xFFF8F0E5)],
-          stops: const [0, 0.52, 1],
+              ? const [Color(0xFF050916), Color(0xFF0B1530), Color(0xFF111C35)]
+              : const [Color(0xFFF5F9FF), Color(0xFFE9F1FF), Color(0xFFF8F4FF)],
+          stops: const [0, 0.48, 1],
         ),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          IgnorePointer(
-            child: Align(
-              alignment: const Alignment(1.35, -1.18),
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      theme.colorScheme.primary.withValues(
-                        alpha: isDark ? 0.18 : 0.10,
-                      ),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
+          Positioned(
+            top: -110,
+            right: -80,
+            child: _GlowOrb(
+              size: 340,
+              color: const Color(
+                0xFF6EA8FF,
+              ).withValues(alpha: isDark ? 0.24 : 0.30),
+            ),
+          ),
+          Positioned(
+            top: 280,
+            left: -150,
+            child: _GlowOrb(
+              size: 360,
+              color: const Color(
+                0xFFB89CFF,
+              ).withValues(alpha: isDark ? 0.18 : 0.26),
+            ),
+          ),
+          Positioned(
+            bottom: -170,
+            right: -90,
+            child: _GlowOrb(
+              size: 420,
+              color: const Color(
+                0xFF73E5D3,
+              ).withValues(alpha: isDark ? 0.12 : 0.20),
             ),
           ),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _GlowOrb extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _GlowOrb({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 36, sigmaY: 36),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [color, color.withValues(alpha: 0)],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -112,36 +150,53 @@ class _CustomCardState extends State<CustomCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor =
-        widget.color ?? (isDark ? const Color(0xFF162238) : Colors.white);
+    final glassGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [
+              Colors.white.withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.045),
+            ]
+          : [
+              Colors.white.withValues(alpha: 0.82),
+              Colors.white.withValues(alpha: 0.48),
+            ],
+    );
 
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       margin: widget.margin,
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(widget.radius),
         border:
             widget.border ??
             Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(
-                alpha: isDark ? 0.16 : 0.42,
-              ),
+              color: Colors.white.withValues(alpha: isDark ? 0.16 : 0.68),
             ),
         boxShadow: widget.shadows ?? AppShadows.soft(context),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.radius),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            onHighlightChanged: widget.onTap == null
-                ? null
-                : (value) => setState(() => _pressed = value),
-            borderRadius: BorderRadius.circular(widget.radius),
-            child: Padding(padding: widget.padding, child: widget.child),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: widget.color,
+              gradient: widget.color == null ? glassGradient : null,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                onHighlightChanged: widget.onTap == null
+                    ? null
+                    : (value) => setState(() => _pressed = value),
+                borderRadius: BorderRadius.circular(widget.radius),
+                child: Padding(padding: widget.padding, child: widget.child),
+              ),
+            ),
           ),
         ),
       ),
@@ -517,32 +572,52 @@ class BottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: AppShadows.soft(context),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.outlineVariant.withValues(alpha: 0.34),
-          ),
-        ),
-        child: Row(
-          children: [
-            for (var index = 0; index < items.length; index++) ...[
-              if (index == 2) const SizedBox(width: 66),
-              Expanded(
-                child: _BottomNavButton(
-                  item: items[index],
-                  selected: selectedIndex == index,
-                  onTap: () => onSelected(index),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            height: 76,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: Theme.of(context).brightness == Brightness.dark
+                    ? [
+                        Colors.white.withValues(alpha: 0.13),
+                        Colors.white.withValues(alpha: 0.055),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.86),
+                        Colors.white.withValues(alpha: 0.58),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.white.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.18
+                      : 0.72,
                 ),
               ),
-            ],
-          ],
+              boxShadow: AppShadows.soft(context),
+            ),
+            child: Row(
+              children: [
+                for (var index = 0; index < items.length; index++) ...[
+                  if (index == 2) const SizedBox(width: 66),
+                  Expanded(
+                    child: _BottomNavButton(
+                      item: items[index],
+                      selected: selectedIndex == index,
+                      onTap: () => onSelected(index),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

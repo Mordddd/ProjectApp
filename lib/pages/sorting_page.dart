@@ -189,7 +189,7 @@ class _SortingPageState extends State<SortingPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text("Sorting")),
       body: ListView(
         physics: const BouncingScrollPhysics(),

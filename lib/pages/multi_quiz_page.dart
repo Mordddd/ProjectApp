@@ -80,7 +80,7 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
         hasAnswered && question.checkAnswer(selectedIndices.toList());
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Multi Quiz'),
         backgroundColor: Colors.transparent,

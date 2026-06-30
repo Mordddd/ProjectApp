@@ -547,87 +547,92 @@ class _HomeHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: BorderRadius.circular(15),
+          CustomCard(
+            padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+            radius: 24,
+            shadows: const [],
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(
+                    Icons.auto_stories_rounded,
+                    color: colors.onPrimary,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(
-                  Icons.auto_stories_rounded,
-                  color: colors.onPrimary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Learning Hub',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: colors.onSurface,
-                        fontWeight: FontWeight.w900,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Learning Hub',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '$roleLabel  ·  ${divisionName.isEmpty ? 'Tanpa divisi' : divisionName}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                      Text(
+                        '$roleLabel  ·  ${divisionName.isEmpty ? 'Tanpa divisi' : divisionName}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ValueListenableBuilder<ThemeMode>(
+                  valueListenable: ThemeController.mode,
+                  builder: (context, mode, _) {
+                    return Tooltip(
+                      message: isDark ? 'Mode terang' : 'Mode gelap',
+                      child: IconButton.filledTonal(
+                        onPressed: ThemeController.toggle,
+                        icon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: Icon(
+                            isDark
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded,
+                            key: ValueKey(mode),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'Menu akun',
+                  icon: const Icon(Icons.more_horiz_rounded),
+                  onSelected: (value) {
+                    if (value == 'logout') onLogout();
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout_rounded),
+                          SizedBox(width: 10),
+                          Text('Keluar'),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              ValueListenableBuilder<ThemeMode>(
-                valueListenable: ThemeController.mode,
-                builder: (context, mode, _) {
-                  return Tooltip(
-                    message: isDark ? 'Mode terang' : 'Mode gelap',
-                    child: IconButton.filledTonal(
-                      onPressed: ThemeController.toggle,
-                      icon: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        child: Icon(
-                          isDark
-                              ? Icons.light_mode_rounded
-                              : Icons.dark_mode_rounded,
-                          key: ValueKey(mode),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              PopupMenuButton<String>(
-                tooltip: 'Menu akun',
-                icon: const Icon(Icons.more_horiz_rounded),
-                onSelected: (value) {
-                  if (value == 'logout') onLogout();
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout_rounded),
-                        SizedBox(width: 10),
-                        Text('Keluar'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -671,147 +676,167 @@ class _HeroCard extends StatelessWidget {
         ? user.username
         : user.profile.nama;
 
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 330, maxWidth: 980),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF06183D), Color(0xFF123F78)],
-        ),
-        boxShadow: AppShadows.soft(context),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -80,
-            right: -55,
-            child: Container(
-              width: 230,
-              height: 230,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF8DBBFF).withValues(alpha: 0.36),
-                    Colors.transparent,
-                  ],
+    return CustomCard(
+      color: const Color(0xD9082052),
+      radius: 32,
+      padding: EdgeInsets.zero,
+      border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 720;
+          final fontSize = (constraints.maxWidth * (wide ? 0.052 : 0.095))
+              .clamp(31.0, 52.0);
+
+          final copy = Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Halo, $displayName',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 14),
+              Text.rich(
+                TextSpan(
                   children: [
-                    Text(
-                      'Halo, $displayName',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final fontSize = (constraints.maxWidth * 0.075).clamp(
-                          30.0,
-                          52.0,
-                        );
-                        return Text.rich(
-                          TextSpan(
-                            children: [
-                              const TextSpan(text: 'Belajar lebih fokus '),
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: Container(
-                                  width: fontSize * 1.35,
-                                  height: fontSize * 0.62,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFFC857),
-                                        Color(0xFFFF8A5B),
-                                      ],
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.trending_up_rounded,
-                                    color: AppPalette.navy,
-                                    size: fontSize * 0.4,
-                                  ),
-                                ),
-                              ),
-                              const TextSpan(text: '\ncapai lebih banyak.'),
-                            ],
-                          ),
-                          maxLines: 3,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: Colors.white,
-                            fontSize: fontSize,
-                            height: 1.02,
-                            letterSpacing: -1.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Satu ruang untuk latihan, perhitungan, dan eksplorasi materi yang sesuai dengan aksesmu.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.76),
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: onPrimary,
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: Text(primaryLabel),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppPalette.navy,
+                    const TextSpan(text: 'Belajar lebih fokus '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Container(
+                        width: fontSize * 1.25,
+                        height: fontSize * 0.58,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8FD8FF), Color(0xFFBFA7FF)],
                           ),
                         ),
-                        OutlinedButton.icon(
-                          onPressed: onExplore,
-                          icon: const Icon(Icons.grid_view_rounded),
-                          label: const Text('Jelajahi fitur'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.48),
-                            ),
-                          ),
+                        child: Icon(
+                          Icons.trending_up_rounded,
+                          color: AppPalette.navy,
+                          size: fontSize * 0.38,
                         ),
-                      ],
+                      ),
                     ),
+                    const TextSpan(text: '\ncapai lebih banyak.'),
                   ],
                 ),
+                maxLines: 3,
+                style: theme.textTheme.displaySmall?.copyWith(
+                  color: Colors.white,
+                  fontSize: fontSize,
+                  height: 1.02,
+                  letterSpacing: -1.4,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Satu ruang untuk latihan, perhitungan, dan eksplorasi materi sesuai aksesmu.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.76),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 26),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: onPrimary,
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: Text(primaryLabel),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppPalette.navy,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onExplore,
+                    icon: const Icon(Icons.grid_view_rounded),
+                    label: const Text('Jelajahi fitur'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.48),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          final visual = SizedBox(
+            height: wide ? 270 : 190,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.rotate(
+                  angle: -0.15,
+                  child: Container(
+                    width: wide ? 220 : 180,
+                    height: wide ? 220 : 170,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF88D7FF).withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(38),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.20),
+                      ),
+                    ),
+                  ),
+                ),
+                Transform.rotate(
+                  angle: 0.12,
+                  child: Container(
+                    width: wide ? 190 : 155,
+                    height: wide ? 190 : 145,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.30),
+                          Colors.white.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(34),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.auto_stories_rounded,
+                      color: Colors.white,
+                      size: 72,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+
+          return Padding(
+            padding: EdgeInsets.all(wide ? 34 : 24),
+            child: wide
+                ? Row(
+                    children: [
+                      Expanded(flex: 6, child: copy),
+                      const SizedBox(width: 30),
+                      Expanded(flex: 4, child: visual),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [copy, const SizedBox(height: 16), visual],
+                  ),
+          );
+        },
       ),
     );
   }

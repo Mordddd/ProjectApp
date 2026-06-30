@@ -65,7 +65,7 @@ class _PollPageState extends State<PollPage> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Polling Hobi'),
         backgroundColor: Colors.transparent,

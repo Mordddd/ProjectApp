@@ -73,13 +73,15 @@ class AppTheme {
       colorScheme: scheme,
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: Colors.transparent,
+      canvasColor: Colors.transparent,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
-        elevation: isDark ? 0 : 1,
+        elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: scheme.surface,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
         titleTextStyle: TextStyle(
           fontFamily: GoogleFonts.outfit().fontFamily,
@@ -89,7 +91,9 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: isDark ? const Color(0xFF172033) : Colors.white,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.09)
+            : Colors.white.withValues(alpha: 0.64),
         elevation: 0,
         margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
@@ -97,9 +101,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
           side: BorderSide(
-            color: scheme.outlineVariant.withValues(
-              alpha: isDark ? 0.20 : 0.42,
-            ),
+            color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.62),
           ),
         ),
       ),
@@ -136,7 +138,9 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF111827) : AppPalette.softBlue,
+        fillColor: isDark
+            ? Colors.white.withValues(alpha: 0.075)
+            : Colors.white.withValues(alpha: 0.58),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 16,
@@ -148,9 +152,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: scheme.outlineVariant.withValues(
-              alpha: isDark ? 0.22 : 0.36,
-            ),
+            color: Colors.white.withValues(alpha: isDark ? 0.14 : 0.66),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -164,7 +166,9 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: isDark ? const Color(0xFF172033) : AppPalette.softBlue,
+        backgroundColor: isDark
+            ? Colors.white.withValues(alpha: 0.09)
+            : Colors.white.withValues(alpha: 0.62),
         selectedColor: scheme.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(color: scheme.onSurface),
         side: BorderSide.none,
@@ -221,8 +225,20 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isDark ? const Color(0xFF172033) : Colors.white,
+        backgroundColor: isDark
+            ? const Color(0xF21A2740)
+            : const Color(0xF2F8FAFF),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: isDark ? const Color(0xF21A2740) : const Color(0xF2F8FAFF),
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: isDark ? 0.14 : 0.64),
+          ),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

@@ -299,11 +299,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final selectedTab = widget.canViewAllProfiles ? _selectedTab : 0;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Profil')),
       body: Column(
         children: [

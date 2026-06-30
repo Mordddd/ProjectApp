@@ -34,6 +34,9 @@ class _MyAppState extends State<MyApp> {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: themeMode,
+          builder: (context, child) {
+            return AppBackdrop(child: child ?? const SizedBox.shrink());
+          },
           home: const AuthGate(),
         );
       },

@@ -243,7 +243,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Kalkulator'),
         backgroundColor: Colors.transparent,

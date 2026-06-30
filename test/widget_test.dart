@@ -23,7 +23,7 @@ void main() {
     await _login(tester, 'admin', 'admin123');
 
     expect(find.text('Learning Hub'), findsOneWidget);
-    expect(find.text('Fitur populer'), findsOneWidget);
+    expect(find.text('Fitur'), findsOneWidget);
     expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, 'sorting');
@@ -293,7 +293,7 @@ Future<void> _login(
   await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
   await tester.pumpAndSettle();
 
-  expect(find.text('Fitur populer'), findsOneWidget);
+  expect(find.text('Fitur'), findsOneWidget);
 }
 
 ZodiacRecordsCompanion _zodiacRecord({

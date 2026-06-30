@@ -104,10 +104,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       );
     }
 
-    final colors = Theme.of(context).colorScheme;
-
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Create Account')),
       body: ListView(
         physics: const BouncingScrollPhysics(),
