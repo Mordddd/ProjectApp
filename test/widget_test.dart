@@ -8,6 +8,7 @@ import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/models/level_user.dart';
 import 'package:flutter_application_1/models/permission.dart';
 import 'package:flutter_application_1/services/auth_service.dart';
+import 'package:flutter_application_1/services/permission_repository.dart';
 import 'package:flutter_application_1/services/permission_service.dart';
 
 void main() {
@@ -79,7 +80,8 @@ void main() {
 
   test('role permission overrides persist and replace defaults', () async {
     SharedPreferences.setMockInitialValues({});
-    await PermissionService.initialize();
+    final repository = _MemoryPermissionRepository();
+    await PermissionService.initialize(repository: repository);
     final login = await AuthService().login('customer', 'customer123');
     final customer = login.user!;
 
@@ -98,7 +100,7 @@ void main() {
       isTrue,
     );
 
-    await PermissionService.initialize();
+    await PermissionService.initialize(repository: repository);
     expect(
       PermissionService.canAccess(customer, PermissionFeature.sorting),
       isTrue,
@@ -114,6 +116,30 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'user permission overrides take precedence over role permissions',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final login = await AuthService().login('customer', 'customer123');
+      final customer = login.user!.copyWith(authId: 'test-user-id');
+      final repository = _MemoryPermissionRepository(
+        userPermissions: {
+          customer.authId!: {PermissionFeature.sorting: true},
+        },
+      );
+
+      await PermissionService.initialize(
+        repository: repository,
+        user: customer,
+      );
+
+      expect(
+        PermissionService.canAccess(customer, PermissionFeature.sorting),
+        isTrue,
+      );
+    },
+  );
 
   test('Zodiac records support Drift SQLite CRUD', () async {
     final database = AppDatabase(NativeDatabase.memory());
@@ -157,6 +183,49 @@ void main() {
     records = await database.watchZodiacRecords().first;
     expect(records, isEmpty);
   });
+}
+
+class _MemoryPermissionRepository implements PermissionRepository {
+  final Map<LevelUser, Map<PermissionFeature, bool>> rolePermissions;
+  final Map<String, Map<PermissionFeature, bool>> userPermissions;
+
+  _MemoryPermissionRepository({
+    Map<LevelUser, Map<PermissionFeature, bool>>? rolePermissions,
+    Map<String, Map<PermissionFeature, bool>>? userPermissions,
+  }) : rolePermissions = rolePermissions ?? {},
+       userPermissions = userPermissions ?? {};
+
+  @override
+  Future<Map<PermissionFeature, bool>> getPermissionsForRole(
+    LevelUser role,
+  ) async {
+    return Map.of(rolePermissions[role] ?? const {});
+  }
+
+  @override
+  Future<Map<PermissionFeature, bool>> getPermissionsForUser(
+    String userId,
+  ) async {
+    return Map.of(userPermissions[userId] ?? const {});
+  }
+
+  @override
+  Future<void> updatePermissionForRole(
+    LevelUser role,
+    PermissionFeature feature,
+    bool allowed,
+  ) async {
+    (rolePermissions[role] ??= {})[feature] = allowed;
+  }
+
+  @override
+  Future<void> updatePermissionForUser(
+    String userId,
+    PermissionFeature feature,
+    bool allowed,
+  ) async {
+    (userPermissions[userId] ??= {})[feature] = allowed;
+  }
 }
 
 Future<void> _login(

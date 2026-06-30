@@ -2,9 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter",
+      "name": "EduHub Android Supabase",
       "request": "launch",
-      "type": "dart"
+      "type": "dart",
+      "deviceId": "emulator-5554",
+      "toolArgs": [
+        "--dart-define=SUPABASE_URL=https://hsfzmbpmvrlaqodfumhf.supabase.co",
+        "--dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_D0sptpVow0NhCbpOyeFfpA_NxQkiraR"
+      ]
     }
   ]
 }

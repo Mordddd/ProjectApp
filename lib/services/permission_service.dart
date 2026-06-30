@@ -7,16 +7,29 @@ import 'permission_repository.dart';
 class PermissionService {
   PermissionService._();
 
-  static PermissionRepository _repository = LocalPermissionRepository();
+  static PermissionRepository? _repository;
   static final Map<LevelUser, Map<PermissionFeature, bool>> _saved = {};
+  static final Map<String, Map<PermissionFeature, bool>> _userOverrides = {};
 
   /// Loads persisted overrides. Call during session startup before rendering
   /// permission-aware UI.
-  static Future<void> initialize({PermissionRepository? repository}) async {
-    if (repository != null) _repository = repository;
+  static Future<void> initialize({
+    PermissionRepository? repository,
+    AppUser? user,
+  }) async {
+    _repository = repository;
     _saved.clear();
+    _userOverrides.clear();
+
+    if (repository == null) return;
+
     for (final role in LevelUser.values) {
-      _saved[role] = await _repository.getPermissionsForRole(role);
+      _saved[role] = await repository.getPermissionsForRole(role);
+    }
+
+    final userId = user?.authId;
+    if (userId != null && userId.isNotEmpty) {
+      _userOverrides[userId] = await repository.getPermissionsForUser(userId);
     }
   }
 
@@ -54,8 +67,25 @@ class PermissionService {
     bool allowed,
   ) async {
     if (feature == PermissionFeature.accessControl) return;
-    await _repository.updatePermissionForRole(role, feature, allowed);
+    final repository = _requireRepository();
+    await repository.updatePermissionForRole(role, feature, allowed);
     (_saved[role] ??= {})[feature] = allowed;
+  }
+
+  static Future<void> updatePermissionForUser(
+    AppUser user,
+    PermissionFeature feature,
+    bool allowed,
+  ) async {
+    if (feature == PermissionFeature.accessControl) return;
+    final userId = user.authId;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('A Supabase user ID is required for user permissions.');
+    }
+
+    final repository = _requireRepository();
+    await repository.updatePermissionForUser(userId, feature, allowed);
+    (_userOverrides[userId] ??= {})[feature] = allowed;
   }
 
   static List<PermissionFeature> getPermissionsForUser(AppUser user) {
@@ -70,6 +100,8 @@ class PermissionService {
     if (feature == PermissionFeature.accessControl) {
       return user.levelUser.isAdmin;
     }
+    final userOverride = _userOverrides[user.authId]?[feature];
+    if (userOverride != null) return userOverride;
     return _effectivePermission(user.levelUser, feature);
   }
 
@@ -112,5 +144,15 @@ class PermissionService {
           PermissionFeature.zodiac,
         };
     }
+  }
+
+  static PermissionRepository _requireRepository() {
+    final repository = _repository;
+    if (repository == null) {
+      throw StateError(
+        'Permission persistence requires a configured Supabase project.',
+      );
+    }
+    return repository;
   }
 }

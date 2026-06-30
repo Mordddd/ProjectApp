@@ -68,8 +68,9 @@ class _AuthGateState extends State<AuthGate> {
     if (user != null) {
       await PermissionService.initialize(
         repository: SupabaseConfig.isConfigured
-            ? SupabasePermissionRepository(SupabaseConfig.client)
-            : LocalPermissionRepository(),
+            ? SupabasePermissionRepository()
+            : null,
+        user: user,
       );
     }
     return user;

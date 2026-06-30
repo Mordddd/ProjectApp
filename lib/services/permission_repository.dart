@@ -1,75 +1,57 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/supabase_config.dart';
 import '../models/level_user.dart';
 import '../models/permission.dart';
 
 abstract class PermissionRepository {
   Future<Map<PermissionFeature, bool>> getPermissionsForRole(LevelUser role);
 
+  Future<Map<PermissionFeature, bool>> getPermissionsForUser(String userId);
+
   Future<void> updatePermissionForRole(
     LevelUser role,
     PermissionFeature feature,
     bool allowed,
   );
-}
 
-class LocalPermissionRepository implements PermissionRepository {
-  static const _keyPrefix = 'role_permission';
-
-  String _key(LevelUser role, PermissionFeature feature) {
-    return '${_keyPrefix}_${role.code}_${feature.name}';
-  }
-
-  @override
-  Future<Map<PermissionFeature, bool>> getPermissionsForRole(
-    LevelUser role,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    final result = <PermissionFeature, bool>{};
-
-    for (final feature in PermissionFeature.values) {
-      final key = _key(role, feature);
-      if (prefs.containsKey(key)) {
-        result[feature] = prefs.getBool(key) ?? false;
-      }
-    }
-    return result;
-  }
-
-  @override
-  Future<void> updatePermissionForRole(
-    LevelUser role,
+  Future<void> updatePermissionForUser(
+    String userId,
     PermissionFeature feature,
     bool allowed,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_key(role, feature), allowed);
-  }
+  );
 }
 
 class SupabasePermissionRepository implements PermissionRepository {
-  final SupabaseClient client;
+  final SupabaseClient? _injectedClient;
 
-  SupabasePermissionRepository(this.client);
+  SupabasePermissionRepository({SupabaseClient? client})
+    : _injectedClient = client;
+
+  SupabaseClient get _client => _injectedClient ?? SupabaseConfig.client;
 
   @override
   Future<Map<PermissionFeature, bool>> getPermissionsForRole(
     LevelUser role,
   ) async {
-    final rows = await client
+    final rows = await _client
         .from('role_permissions')
         .select('feature_code, allowed')
         .eq('role_id', role.id);
 
-    final result = <PermissionFeature, bool>{};
-    for (final row in rows) {
-      final feature = PermissionFeatureLabel.fromDatabaseKey(
-        row['feature_code'] as String,
-      );
-      if (feature != null) result[feature] = row['allowed'] as bool;
-    }
-    return result;
+    return _permissionsFromRows(rows);
+  }
+
+  @override
+  Future<Map<PermissionFeature, bool>> getPermissionsForUser(
+    String userId,
+  ) async {
+    final rows = await _client
+        .from('user_permissions')
+        .select('feature_code, allowed')
+        .eq('user_id', userId);
+
+    return _permissionsFromRows(rows);
   }
 
   @override
@@ -78,10 +60,37 @@ class SupabasePermissionRepository implements PermissionRepository {
     PermissionFeature feature,
     bool allowed,
   ) async {
-    await client.from('role_permissions').upsert({
+    await _client.from('role_permissions').upsert({
       'role_id': role.id,
       'feature_code': feature.databaseKey,
       'allowed': allowed,
-    });
+    }, onConflict: 'role_id,feature_code');
+  }
+
+  @override
+  Future<void> updatePermissionForUser(
+    String userId,
+    PermissionFeature feature,
+    bool allowed,
+  ) async {
+    await _client.from('user_permissions').upsert({
+      'user_id': userId,
+      'feature_code': feature.databaseKey,
+      'allowed': allowed,
+    }, onConflict: 'user_id,feature_code');
+  }
+
+  Map<PermissionFeature, bool> _permissionsFromRows(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final result = <PermissionFeature, bool>{};
+    for (final row in rows) {
+      final featureCode = row['feature_code'];
+      if (featureCode is! String) continue;
+
+      final feature = PermissionFeatureLabel.fromDatabaseKey(featureCode);
+      if (feature != null) result[feature] = row['allowed'] == true;
+    }
+    return result;
   }
 }
