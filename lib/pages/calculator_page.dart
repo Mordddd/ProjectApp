@@ -25,7 +25,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
   int _selectedShape = 0; // 0: Segitiga, 1: Lingkaran, 2: Persegi, 3: Tabung
   final TextEditingController _shapeInput1 = TextEditingController();
   final TextEditingController _shapeInput2 = TextEditingController();
-  final TextEditingController _shapeInput3 = TextEditingController();
   String? _geometryResult;
   String? _geometryError;
 
@@ -151,7 +150,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     setState(() {
       _shapeInput1.clear();
       _shapeInput2.clear();
-      _shapeInput3.clear();
       _geometryResult = null;
       _geometryError = null;
     });
@@ -237,7 +235,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     _num2Controller.dispose();
     _shapeInput1.dispose();
     _shapeInput2.dispose();
-    _shapeInput3.dispose();
     super.dispose();
   }
 
@@ -342,6 +339,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   Widget _buildCalculatorTab() {
+    final colors = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -400,12 +398,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Masukkan Angka',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppPalette.ink,
+                      color: colors.onSurface,
                     ),
                   ),
 
@@ -424,7 +422,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           decoration: InputDecoration(
                             labelText: 'Angka 1',
                             filled: true,
-                            fillColor: AppPalette.softBlue,
+                            fillColor: colors.surfaceContainerHighest,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -455,7 +453,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           decoration: InputDecoration(
                             labelText: 'Angka 2',
                             filled: true,
-                            fillColor: AppPalette.softBlue,
+                            fillColor: colors.surfaceContainerHighest,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -481,12 +479,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   const SizedBox(height: 24),
 
                   // Operation Buttons
-                  const Text(
+                  Text(
                     'Pilih Operasi',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppPalette.ink,
+                      color: colors.onSurface,
                     ),
                   ),
 
@@ -661,6 +659,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   Widget _buildGeometryTab() {
+    final colors = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -719,12 +718,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Pilih Bangun',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppPalette.ink,
+                      color: colors.onSurface,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -797,12 +796,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Masukkan Data',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppPalette.ink,
+                      color: colors.onSurface,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -821,7 +820,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             ? 'Panjang'
                             : 'Jari-jari',
                         filled: true,
-                        fillColor: AppPalette.softBlue,
+                        fillColor: colors.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -856,7 +855,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             ? 'Lebar'
                             : 'Tinggi',
                         filled: true,
-                        fillColor: AppPalette.softBlue,
+                        fillColor: colors.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -880,7 +879,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       decoration: InputDecoration(
                         labelText: 'Jari-jari',
                         filled: true,
-                        fillColor: AppPalette.softBlue,
+                        fillColor: colors.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,

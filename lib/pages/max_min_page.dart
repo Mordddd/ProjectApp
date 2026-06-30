@@ -22,8 +22,6 @@ class _MaxMinPageState extends State<MaxMinPage> {
 
   List<String> history = [];
 
-  final primaryColor = AppPalette.navy;
-
   @override
   void initState() {
     super.initState();
@@ -47,21 +45,49 @@ class _MaxMinPageState extends State<MaxMinPage> {
   Future<void> saveHistory(String data) async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() => history.insert(0, data));
+    setState(() {
+      history.insert(0, data);
+      if (history.length > 20) {
+        history = history.take(20).toList();
+      }
+    });
     await prefs.setStringList('history', history);
   }
 
   void calculate() {
-    final parsed = controller.text
-        .split('\n')
-        .map((e) => double.tryParse(e.trim()))
-        .whereType<double>()
+    final tokens = controller.text
+        .trim()
+        .split(RegExp(r'[\s,;]+'))
+        .where((token) => token.isNotEmpty)
         .toList();
+    final parsed = <double>[];
+    final invalid = <String>[];
 
-    if (parsed.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Masukkan angka!")));
+    for (final token in tokens) {
+      final value = double.tryParse(token);
+      if (value == null || !value.isFinite) {
+        invalid.add(token);
+      } else {
+        parsed.add(value);
+      }
+    }
+
+    if (parsed.isEmpty || invalid.isNotEmpty) {
+      setState(() {
+        numbers = [];
+        max = null;
+        min = null;
+        avg = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            invalid.isEmpty
+                ? 'Masukkan setidaknya satu angka.'
+                : 'Nilai tidak valid: ${invalid.take(3).join(', ')}',
+          ),
+        ),
+      );
       return;
     }
 
@@ -88,6 +114,7 @@ class _MaxMinPageState extends State<MaxMinPage> {
   }
 
   Widget buildLineChart() {
+    final chartColor = Theme.of(context).colorScheme.primary;
     return SizedBox(
       height: 250,
       child: LineChart(
@@ -101,12 +128,12 @@ class _MaxMinPageState extends State<MaxMinPage> {
                 return FlSpot(e.key.toDouble(), e.value);
               }).toList(),
               isCurved: true,
-              color: primaryColor,
+              color: chartColor,
               barWidth: 3,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: primaryColor.withValues(alpha: 0.16),
+                color: chartColor.withValues(alpha: 0.16),
               ),
             ),
           ],
@@ -177,7 +204,9 @@ class _MaxMinPageState extends State<MaxMinPage> {
                     controller: controller,
                     maxLines: 5,
                     decoration: const InputDecoration(
-                      labelText: "Masukkan angka (1 per baris)",
+                      labelText: "Masukkan kumpulan angka",
+                      helperText:
+                          "Pisahkan dengan baris, koma, spasi, atau titik koma",
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -235,7 +264,7 @@ class _MaxMinPageState extends State<MaxMinPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: numbers.map((n) {
-                    Color color = AppPalette.navy;
+                    Color color = colors.primary;
 
                     if (n == max) color = Colors.green;
                     if (n == min) color = Colors.red;
@@ -259,10 +288,7 @@ class _MaxMinPageState extends State<MaxMinPage> {
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.history_rounded,
-                          color: AppPalette.navy,
-                        ),
+                        Icon(Icons.history_rounded, color: colors.primary),
                         const SizedBox(width: 12),
                         Expanded(child: Text(h)),
                       ],
@@ -302,7 +328,7 @@ class _MetricCard extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.titleLarge?.copyWith(
-                color: AppPalette.navy,
+                color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w900,
               ),
             ),

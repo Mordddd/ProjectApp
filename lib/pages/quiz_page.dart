@@ -172,11 +172,25 @@ class _QuizPageState extends State<QuizPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              correctCount >= totalCount * 0.7
-                  ? '🎉 Bagus sekali!'
-                  : '📚 Terus belajar!',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  correctCount >= totalCount * 0.7
+                      ? Icons.workspace_premium_rounded
+                      : Icons.auto_stories_rounded,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  correctCount >= totalCount * 0.7
+                      ? 'Bagus sekali!'
+                      : 'Terus belajar!',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -327,7 +341,7 @@ class _QuizPageState extends State<QuizPage> {
                           valueColor: AlwaysStoppedAnimation<Color>(
                             question.isMultipleAnswer
                                 ? const Color(0xFFF59E0B)
-                                : AppPalette.navy,
+                                : colors.primary,
                           ),
                         ),
                       ),
@@ -362,7 +376,7 @@ class _QuizPageState extends State<QuizPage> {
                       decoration: BoxDecoration(
                         color: question.isMultipleAnswer
                             ? const Color(0xFFFEF08A)
-                            : AppPalette.navy.withValues(alpha: 0.1),
+                            : colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -374,7 +388,7 @@ class _QuizPageState extends State<QuizPage> {
                           fontWeight: FontWeight.w600,
                           color: question.isMultipleAnswer
                               ? const Color(0xFFB45309)
-                              : AppPalette.navy,
+                              : colors.primary,
                         ),
                       ),
                     ),
@@ -438,22 +452,28 @@ class _QuizPageState extends State<QuizPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isCorrect ? 'Benar! ✅' : 'Salah! ❌',
+                              isCorrect ? 'Benar!' : 'Belum tepat',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: isCorrect
-                                    ? const Color(0xFF065F46)
-                                    : const Color(0xFF991B1B),
+                                    ? (isDark
+                                          ? const Color(0xFFA7F3D0)
+                                          : const Color(0xFF065F46))
+                                    : (isDark
+                                          ? const Color(0xFFFECACA)
+                                          : const Color(0xFF991B1B)),
                               ),
                             ),
                             if (!isCorrect) ...[
                               const SizedBox(height: 4),
                               Text(
                                 'Jawaban benar: ${question.getCorrectAnswersText()}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: Color(0xFF991B1B),
+                                  color: isDark
+                                      ? const Color(0xFFFECACA)
+                                      : const Color(0xFF991B1B),
                                 ),
                               ),
                             ],
@@ -494,13 +514,17 @@ class _QuizPageState extends State<QuizPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isCorrect ? 'Benar! ✅' : 'Salah! ❌',
+                              isCorrect ? 'Benar!' : 'Belum tepat',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: isCorrect
-                                    ? const Color(0xFF065F46)
-                                    : const Color(0xFF991B1B),
+                                    ? (isDark
+                                          ? const Color(0xFFA7F3D0)
+                                          : const Color(0xFF065F46))
+                                    : (isDark
+                                          ? const Color(0xFFFECACA)
+                                          : const Color(0xFF991B1B)),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -509,8 +533,12 @@ class _QuizPageState extends State<QuizPage> {
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isCorrect
-                                    ? const Color(0xFF065F46)
-                                    : const Color(0xFF991B1B),
+                                    ? (isDark
+                                          ? const Color(0xFFA7F3D0)
+                                          : const Color(0xFF065F46))
+                                    : (isDark
+                                          ? const Color(0xFFFECACA)
+                                          : const Color(0xFF991B1B)),
                               ),
                             ),
                           ],

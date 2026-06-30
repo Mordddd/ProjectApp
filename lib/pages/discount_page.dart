@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_components.dart';
 
 class DiscountPage extends StatefulWidget {
@@ -116,7 +117,15 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
                   TextField(
                     controller: priceController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Harga'),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(15),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Harga',
+                      prefixIcon: Icon(Icons.payments_outlined),
+                      helperText: 'Maksimal 15 digit',
+                    ),
                     onChanged: (value) {
                       String newValue = value.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -125,7 +134,8 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
                         return;
                       }
 
-                      final number = int.parse(newValue);
+                      final number = int.tryParse(newValue);
+                      if (number == null) return;
                       final formatted = formatRupiah.format(number);
 
                       priceController.value = TextEditingValue(
@@ -140,7 +150,14 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
                   TextField(
                     controller: discountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Diskon (%)'),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Diskon (%)',
+                      prefixIcon: Icon(Icons.percent_rounded),
+                    ),
                   ),
                 ],
               ),
@@ -183,7 +200,11 @@ Harga Akhir: ${formatRupiah.format(finalPrice)}
                     const Divider(),
                     Text(
                       result,
-                      style: TextStyle(fontSize: 16, color: primaryColor),
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.55,
+                        color: colors.onSurface,
+                      ),
                     ),
                   ],
                 ),

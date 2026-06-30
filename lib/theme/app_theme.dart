@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/app_components.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../widgets/app_components.dart';
 
 class ThemeController {
   ThemeController._();
@@ -59,14 +61,20 @@ class AppTheme {
 
   static ThemeData _base(ColorScheme scheme) {
     final isDark = scheme.brightness == Brightness.dark;
+    final baseTextTheme = ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+    ).textTheme;
+    final textTheme = GoogleFonts.outfitTextTheme(
+      baseTextTheme,
+    ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
 
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
       scaffoldBackgroundColor: scheme.surface,
-      textTheme: ThemeData(colorScheme: scheme, useMaterial3: true).textTheme
-          .apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface),
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: isDark ? 0 : 1,
@@ -74,6 +82,7 @@ class AppTheme {
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         titleTextStyle: TextStyle(
+          fontFamily: GoogleFonts.outfit().fontFamily,
           color: scheme.onSurface,
           fontSize: 18,
           fontWeight: FontWeight.w800,
@@ -148,6 +157,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: scheme.primary, width: 1.6),
         ),
+        errorMaxLines: 2,
+        labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+        hintStyle: TextStyle(
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.72),
+        ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: isDark ? const Color(0xFF172033) : AppPalette.softBlue,
@@ -194,6 +208,17 @@ class AppTheme {
         backgroundColor: isDark ? const Color(0xFF1E293B) : AppPalette.navy,
         contentTextStyle: const TextStyle(color: Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      tooltipTheme: TooltipThemeData(
+        waitDuration: const Duration(milliseconds: 450),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFFF8FAFC) : AppPalette.navy,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        textStyle: TextStyle(
+          color: isDark ? AppPalette.navy : Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: isDark ? const Color(0xFF172033) : Colors.white,

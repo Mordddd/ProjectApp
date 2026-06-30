@@ -20,40 +20,51 @@ class _SortingPageState extends State<SortingPage> {
   }
 
   void processSorting() {
-    final numbers = controller.text
+    final tokens = controller.text
         .split(',')
-        .map((e) => int.tryParse(e.trim()))
-        .whereType<int>()
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
         .toList();
+    final numbers = tokens.map(int.tryParse).toList();
+    final hasInvalidValue = numbers.any((value) => value == null);
 
-    if (numbers.length != 10) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Masukkan tepat 10 angka")));
+    if (tokens.length != 10 || hasInvalidValue) {
+      setState(() => results = {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            hasInvalidValue
+                ? 'Semua nilai harus berupa bilangan bulat.'
+                : 'Masukkan tepat 10 angka yang dipisahkan koma.',
+          ),
+        ),
+      );
       return;
     }
+
+    final validNumbers = numbers.cast<int>();
 
     setState(() {
       results = {
         "Bubble Sort": generateResult(
-          bubbleSort(numbers),
-          bubbleSort(numbers, desc: true),
+          bubbleSort(validNumbers),
+          bubbleSort(validNumbers, desc: true),
         ),
         "Selection Sort": generateResult(
-          selectionSort(numbers),
-          selectionSort(numbers, desc: true),
+          selectionSort(validNumbers),
+          selectionSort(validNumbers, desc: true),
         ),
         "Insertion Sort": generateResult(
-          insertionSort(numbers),
-          insertionSort(numbers, desc: true),
+          insertionSort(validNumbers),
+          insertionSort(validNumbers, desc: true),
         ),
         "Merge Sort": generateResult(
-          mergeSort(numbers),
-          mergeSort(numbers, desc: true),
+          mergeSort(validNumbers),
+          mergeSort(validNumbers, desc: true),
         ),
         "Quick Sort": generateResult(
-          quickSort(numbers),
-          quickSort(numbers, desc: true),
+          quickSort(validNumbers),
+          quickSort(validNumbers, desc: true),
         ),
       };
     });
@@ -214,8 +225,12 @@ class _SortingPageState extends State<SortingPage> {
               children: [
                 TextField(
                   controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: "Masukkan 10 angka (pisahkan koma)",
+                    prefixIcon: Icon(Icons.data_array_rounded),
                   ),
                 ),
                 const SizedBox(height: 16),

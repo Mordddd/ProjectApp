@@ -27,7 +27,58 @@ class AppShadows {
   }
 }
 
-class CustomCard extends StatelessWidget {
+class AppBackdrop extends StatelessWidget {
+  final Widget child;
+
+  const AppBackdrop({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [Color(0xFF0B1220), Color(0xFF101A2D), Color(0xFF0F172A)]
+              : const [Color(0xFFFBF8F1), Color(0xFFF4F7FF), Color(0xFFF8F0E5)],
+          stops: const [0, 0.52, 1],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          IgnorePointer(
+            child: Align(
+              alignment: const Alignment(1.35, -1.18),
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      theme.colorScheme.primary.withValues(
+                        alpha: isDark ? 0.18 : 0.10,
+                      ),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class CustomCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry? margin;
@@ -50,42 +101,65 @@ class CustomCard extends StatelessWidget {
   });
 
   @override
+  State<CustomCard> createState() => _CustomCardState();
+}
+
+class _CustomCardState extends State<CustomCard> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final cardColor =
-        color ?? (isDark ? const Color(0xFF162238) : Colors.white);
+        widget.color ?? (isDark ? const Color(0xFF162238) : Colors.white);
 
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
-      margin: margin,
+      margin: widget.margin,
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(widget.radius),
         border:
-            border ??
+            widget.border ??
             Border.all(
               color: theme.colorScheme.outlineVariant.withValues(
                 alpha: isDark ? 0.16 : 0.42,
               ),
             ),
-        boxShadow: shadows ?? AppShadows.soft(context),
+        boxShadow: widget.shadows ?? AppShadows.soft(context),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(widget.radius),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(radius),
-            child: Padding(padding: padding, child: child),
+            onTap: widget.onTap,
+            onHighlightChanged: widget.onTap == null
+                ? null
+                : (value) => setState(() => _pressed = value),
+            borderRadius: BorderRadius.circular(widget.radius),
+            child: Padding(padding: widget.padding, child: widget.child),
           ),
         ),
       ),
     );
 
-    return content;
+    if (widget.onTap == null) return content;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.985 : (_hovered ? 1.012 : 1),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: content,
+      ),
+    );
   }
 }
 
@@ -439,6 +513,7 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(items.length == 4, 'BottomNav expects exactly four destinations.');
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -456,34 +531,18 @@ class BottomNav extends StatelessWidget {
           ),
         ),
         child: Row(
-          children: List.generate(items.length, (index) {
-            final navItem = _BottomNavButton(
-              item: items[index],
-              selected: selectedIndex == index,
-              onTap: () => onSelected(index),
-            );
-
-            if (items.length == 4 && index == 1) {
-              return Expanded(
-                flex: 2,
-                child: Row(
-                  children: [
-                    Expanded(child: navItem),
-                    const SizedBox(width: 70),
-                  ],
+          children: [
+            for (var index = 0; index < items.length; index++) ...[
+              if (index == 2) const SizedBox(width: 66),
+              Expanded(
+                child: _BottomNavButton(
+                  item: items[index],
+                  selected: selectedIndex == index,
+                  onTap: () => onSelected(index),
                 ),
-              );
-            }
-
-            if (items.length == 4 && index == 2) {
-              return Expanded(
-                flex: 2,
-                child: Row(children: [Expanded(child: navItem)]),
-              );
-            }
-
-            return Expanded(child: navItem);
-          }),
+              ),
+            ],
+          ],
         ),
       ),
     );

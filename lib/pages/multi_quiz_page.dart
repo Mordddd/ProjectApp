@@ -242,13 +242,17 @@ class _MultiQuizPageState extends State<MultiQuizPage> {
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            isCorrect ? 'Benar! ✅' : 'Salah! ❌',
+                            isCorrect ? 'Benar!' : 'Belum tepat',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: isCorrect
-                                  ? const Color(0xFF065F46)
-                                  : const Color(0xFF991B1B),
+                                  ? (isDark
+                                        ? const Color(0xFFA7F3D0)
+                                        : const Color(0xFF065F46))
+                                  : (isDark
+                                        ? const Color(0xFFFECACA)
+                                        : const Color(0xFF991B1B)),
                             ),
                           ),
                         ],

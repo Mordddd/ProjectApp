@@ -7,6 +7,9 @@ import 'package:flutter_application_1/database/app_database.dart';
 import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/models/level_user.dart';
 import 'package:flutter_application_1/models/permission.dart';
+import 'package:flutter_application_1/pages/discount_page.dart';
+import 'package:flutter_application_1/pages/max_min_page.dart';
+import 'package:flutter_application_1/pages/sorting_page.dart';
 import 'package:flutter_application_1/services/auth_service.dart';
 import 'package:flutter_application_1/services/permission_repository.dart';
 import 'package:flutter_application_1/services/permission_service.dart';
@@ -76,6 +79,53 @@ void main() {
 
     expect(find.textContaining('berstatus no valid'), findsOneWidget);
     expect(find.text('Fitur populer'), findsNothing);
+  });
+
+  testWidgets('discount input safely limits oversized values', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: DiscountPage()));
+
+    await tester.enterText(
+      find.byType(TextField).first,
+      '999999999999999999999999',
+    );
+    await tester.enterText(find.byType(TextField).last, '10');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Hitung'));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Harga Akhir:'), findsOneWidget);
+  });
+
+  testWidgets('data analyzer rejects invalid tokens', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: MaxMinPage()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '1\ninvalid\n3');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Hitung'));
+    await tester.pump();
+
+    expect(find.textContaining('Nilai tidak valid: invalid'), findsOneWidget);
+    expect(find.text('Max'), findsNothing);
+  });
+
+  testWidgets('sorting rejects extra invalid input', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: SortingPage()));
+
+    await tester.enterText(find.byType(TextField), '1,2,3,4,5,6,7,8,9,10,bad');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Proses Sorting'));
+    await tester.pump();
+
+    expect(
+      find.text('Semua nilai harus berupa bilangan bulat.'),
+      findsOneWidget,
+    );
+    expect(find.text('Bubble Sort'), findsNothing);
   });
 
   test('role permission overrides persist and replace defaults', () async {

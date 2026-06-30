@@ -231,7 +231,9 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _selectedIndex, children: pages),
+      body: AppBackdrop(
+        child: IndexedStack(index: _selectedIndex, children: pages),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         tooltip: 'Semua fitur',
@@ -270,7 +272,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHomePage(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final padding = width < 390 ? 16.0 : 20.0;
-    final featured = _filteredFeatures.take(6).toList();
+    final featured = _filteredFeatures.take(4).toList();
     final userName = widget.user.profile.namaLengkap.isEmpty
         ? widget.user.username
         : widget.user.profile.namaLengkap;
@@ -303,8 +305,33 @@ class _HomePageState extends State<HomePage> {
             padding: EdgeInsets.fromLTRB(padding, 12, padding, 118),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _StaggeredIn(delay: 20, child: _WelcomeCard(user: widget.user)),
-                const SizedBox(height: 18),
+                if (_query.isEmpty) ...[
+                  _StaggeredIn(
+                    delay: 20,
+                    child: _HeroCard(
+                      user: widget.user,
+                      primaryLabel:
+                          PermissionService.canAccess(
+                            widget.user,
+                            PermissionFeature.quiz,
+                          )
+                          ? 'Mulai quiz'
+                          : 'Mulai belajar',
+                      onPrimary: () {
+                        if (PermissionService.canAccess(
+                          widget.user,
+                          PermissionFeature.quiz,
+                        )) {
+                          _selectTab(2);
+                        } else if (_visibleFeatures.isNotEmpty) {
+                          _openFeature(context, _visibleFeatures.first);
+                        }
+                      },
+                      onExplore: () => _selectTab(3),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                ],
                 SectionHeader(
                   title: _query.isEmpty ? 'Fitur populer' : 'Hasil pencarian',
                   action: 'Lihat semua',
@@ -371,7 +398,9 @@ class _HomePageState extends State<HomePage> {
                   delay: 120,
                   child: _ProgressCard(progress: progress),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
+                const _LearningCueCarousel(),
+                const SizedBox(height: 32),
                 SectionHeader(
                   title: 'Akses cepat',
                   action: 'Semua fitur',
@@ -520,20 +549,45 @@ class _HomeHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: onLogout,
-                icon: const Icon(Icons.logout_rounded),
-                tooltip: 'Logout',
-              ),
-              const Spacer(),
-              Text(
-                'Home',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w900,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  Icons.auto_stories_rounded,
+                  color: colors.onPrimary,
+                  size: 22,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Learning Hub',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '$roleLabel  ·  ${divisionName.isEmpty ? 'Tanpa divisi' : divisionName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               ValueListenableBuilder<ThemeMode>(
                 valueListenable: ThemeController.mode,
                 builder: (context, mode, _) {
@@ -554,47 +608,34 @@ class _HomeHeader extends StatelessWidget {
                   );
                 },
               ),
+              PopupMenuButton<String>(
+                tooltip: 'Menu akun',
+                icon: const Icon(Icons.more_horiz_rounded),
+                onSelected: (value) {
+                  if (value == 'logout') onLogout();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout_rounded),
+                        SizedBox(width: 10),
+                        Text('Keluar'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 18),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Learning Hub',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Hi, $userName',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '$roleLabel - ${divisionName.isEmpty ? 'Tanpa divisi' : divisionName}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colors.primary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           TextField(
             controller: controller,
             onChanged: onQueryChanged,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Cari fitur...',
+              hintText: 'Cari fitur untuk $userName',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: query.isEmpty
                   ? null
@@ -610,52 +651,164 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _WelcomeCard extends StatelessWidget {
+class _HeroCard extends StatelessWidget {
   final AppUser user;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+  final VoidCallback onExplore;
 
-  const _WelcomeCard({required this.user});
+  const _HeroCard({
+    required this.user,
+    required this.primaryLabel,
+    required this.onPrimary,
+    required this.onExplore,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return CustomCard(
-      padding: const EdgeInsets.all(20),
-      child: Row(
+    final displayName = user.profile.nama.isEmpty
+        ? user.username
+        : user.profile.nama;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 330, maxWidth: 980),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF06183D), Color(0xFF123F78)],
+        ),
+        boxShadow: AppShadows.soft(context),
+      ),
+      child: Stack(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, ${user.profile.nama.isEmpty ? user.username : user.profile.nama}!',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AppPalette.navy,
-                  ),
+          Positioned(
+            top: -80,
+            right: -55,
+            child: Container(
+              width: 230,
+              height: 230,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF8DBBFF).withValues(alpha: 0.36),
+                    Colors.transparent,
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Status ${user.statusLabel}. Jelajahi fitur sesuai akses ${user.levelUser.label}.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            width: 82,
-            height: 82,
-            decoration: BoxDecoration(
-              color: AppPalette.softBlue,
-              borderRadius: BorderRadius.circular(26),
-            ),
-            child: const Icon(
-              Icons.auto_stories_rounded,
-              color: AppPalette.navy,
-              size: 42,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Halo, $displayName',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final fontSize = (constraints.maxWidth * 0.075).clamp(
+                          30.0,
+                          52.0,
+                        );
+                        return Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(text: 'Belajar lebih fokus '),
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Container(
+                                  width: fontSize * 1.35,
+                                  height: fontSize * 0.62,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFFC857),
+                                        Color(0xFFFF8A5B),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.trending_up_rounded,
+                                    color: AppPalette.navy,
+                                    size: fontSize * 0.4,
+                                  ),
+                                ),
+                              ),
+                              const TextSpan(text: '\ncapai lebih banyak.'),
+                            ],
+                          ),
+                          maxLines: 3,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: Colors.white,
+                            fontSize: fontSize,
+                            height: 1.02,
+                            letterSpacing: -1.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Satu ruang untuk latihan, perhitungan, dan eksplorasi materi yang sesuai dengan aksesmu.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: onPrimary,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: Text(primaryLabel),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppPalette.navy,
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: onExplore,
+                          icon: const Icon(Icons.grid_view_rounded),
+                          label: const Text('Jelajahi fitur'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.48),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -685,7 +838,7 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconBubble(icon: icon, color: AppPalette.navy),
+          IconBubble(icon: icon, color: theme.colorScheme.primary),
           const SizedBox(height: 14),
           Text(title, style: theme.textTheme.labelMedium),
           const SizedBox(height: 4),
@@ -696,7 +849,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 value,
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  color: AppPalette.navy,
+                  color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -770,33 +923,228 @@ class _ProgressCard extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
+class _LearningCueCarousel extends StatefulWidget {
+  const _LearningCueCarousel();
+
+  @override
+  State<_LearningCueCarousel> createState() => _LearningCueCarouselState();
+}
+
+class _LearningCueCarouselState extends State<_LearningCueCarousel> {
+  final _controller = PageController(viewportFraction: 0.92);
+  int _index = 0;
+
+  static const _cues = [
+    (
+      title: 'Mulai dari satu latihan kecil',
+      body: 'Konsistensi singkat setiap hari lebih mudah dipertahankan.',
+      icon: Icons.bolt_rounded,
+    ),
+    (
+      title: 'Uji pemahamanmu',
+      body:
+          'Gunakan quiz setelah belajar untuk menemukan bagian yang belum kuat.',
+      icon: Icons.psychology_alt_rounded,
+    ),
+    (
+      title: 'Lihat pola pada data',
+      body:
+          'Bandingkan hasil, urutan, dan grafik untuk memahami konsep lebih cepat.',
+      icon: Icons.insights_rounded,
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _move(int delta) {
+    final next = (_index + delta).clamp(0, _cues.length - 1);
+    _controller.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Ritme belajar yang lebih baik',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            IconButton.outlined(
+              tooltip: 'Sebelumnya',
+              onPressed: _index == 0 ? null : () => _move(-1),
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: 'Berikutnya',
+              onPressed: _index == _cues.length - 1 ? null : () => _move(1),
+              icon: const Icon(Icons.arrow_forward_rounded),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 148,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: _cues.length,
+            onPageChanged: (index) => setState(() => _index = index),
+            itemBuilder: (context, index) {
+              final cue = _cues[index];
+              final selected = index == _index;
+              return AnimatedScale(
+                scale: selected ? 1 : 0.94,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: CustomCard(
+                    shadows: selected ? AppShadows.soft(context) : const [],
+                    child: Row(
+                      children: [
+                        IconBubble(
+                          icon: cue.icon,
+                          color: theme.colorScheme.primary,
+                          size: 58,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                cue.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                cue.body,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickAction extends StatefulWidget {
   final _FeatureItem item;
   final ValueChanged<_FeatureItem> onOpen;
 
   const _QuickAction({required this.item, required this.onOpen});
 
   @override
+  State<_QuickAction> createState() => _QuickActionState();
+}
+
+class _QuickActionState extends State<_QuickAction> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return _Pressable(
-      onTap: () => onOpen(item),
-      child: SizedBox(
-        width: 88,
-        child: Column(
-          children: [
-            IconBubble(icon: item.icon, color: item.accent, size: 56),
-            const SizedBox(height: 8),
-            Text(
-              item.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
+    final item = widget.item;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _expanded = true),
+      onExit: (_) => setState(() => _expanded = false),
+      child: _Pressable(
+        onTap: () => widget.onOpen(item),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          width: _expanded ? 190 : 88,
+          padding: EdgeInsets.symmetric(
+            horizontal: _expanded ? 12 : 0,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: _expanded
+                ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: _expanded
+              ? Row(
+                  children: [
+                    IconBubble(icon: item.icon, color: item.accent, size: 54),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            item.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    IconBubble(icon: item.icon, color: item.accent, size: 56),
+                    const SizedBox(height: 8),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
