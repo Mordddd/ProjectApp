@@ -71,9 +71,9 @@ class _HomePageState extends State<HomePage> {
       feature: PermissionFeature.polling,
       icon: Icons.poll_rounded,
       title: 'Polling',
-      subtitle: 'Voting hobi favorit',
+      subtitle: 'Dashboard data kelas',
       accent: const Color(0xFFEC4899),
-      open: (context) => _push(context, const PollPage()),
+      open: (context) => _push(context, PollPage(currentUser: widget.user)),
     ),
     _FeatureItem(
       feature: PermissionFeature.maxMin,

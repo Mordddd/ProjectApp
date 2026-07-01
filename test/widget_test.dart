@@ -7,14 +7,89 @@ import 'package:flutter_application_1/database/app_database.dart';
 import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/models/level_user.dart';
 import 'package:flutter_application_1/models/permission.dart';
+import 'package:flutter_application_1/models/class_poll_response.dart';
 import 'package:flutter_application_1/pages/discount_page.dart';
 import 'package:flutter_application_1/pages/max_min_page.dart';
+import 'package:flutter_application_1/pages/poll_page.dart';
 import 'package:flutter_application_1/pages/sorting_page.dart';
 import 'package:flutter_application_1/services/auth_service.dart';
+import 'package:flutter_application_1/services/class_poll_repository.dart';
 import 'package:flutter_application_1/services/permission_repository.dart';
 import 'package:flutter_application_1/services/permission_service.dart';
 
 void main() {
+  testWidgets('class polling dashboard renders five chart types', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: PollPage()));
+    await tester.pump();
+
+    expect(find.text('Berat badan'), findsOneWidget);
+    expect(find.text('Tinggi badan'), findsOneWidget);
+    expect(find.text('Ukuran baju'), findsOneWidget);
+    expect(find.text('Nomor sepatu'), findsOneWidget);
+    expect(find.text('Golongan darah'), findsOneWidget);
+    expect(find.text('BAR'), findsOneWidget);
+    expect(find.text('LINE'), findsOneWidget);
+    expect(find.text('DONUT'), findsOneWidget);
+    expect(find.text('SCATTER'), findsOneWidget);
+    expect(find.text('RADAR'), findsOneWidget);
+  });
+
+  testWidgets('admin sees class response management controls', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final admin = (await AuthService().login('admin', 'admin123')).user!;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PollPage(
+          currentUser: admin,
+          repository: MemoryClassPollRepository.seeded(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Kelola data responden'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.text('Kelola data responden'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsWidgets);
+    expect(find.byIcon(Icons.delete_outline_rounded), findsWidgets);
+  });
+
+  test(
+    'class polling repository supports create, update, and delete',
+    () async {
+      final repository = MemoryClassPollRepository();
+      const response = ClassPollResponse(
+        name: 'Nadia',
+        weight: 54,
+        height: 163,
+        shirtSize: 'M',
+        shoeSize: 39,
+        bloodType: 'A',
+      );
+
+      await repository.createResponse(response);
+      var rows = await repository.watchResponses().first;
+      expect(rows, hasLength(1));
+
+      final saved = rows.single;
+      await repository.updateResponse(saved.copyWith(weight: 56));
+      rows = await repository.watchResponses().first;
+      expect(rows.single.weight, 56);
+
+      await repository.deleteResponse(saved.id!);
+      rows = await repository.watchResponses().first;
+      expect(rows, isEmpty);
+    },
+  );
+
   testWidgets('admin can login and access all menu features', (
     WidgetTester tester,
   ) async {
